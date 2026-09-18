@@ -27,15 +27,18 @@ Agregados conceptuales:
 - temporada y reglamento de puntos versionado;
 - piloto y escudería con participación histórica;
 - circuito y edición de Gran Premio;
-- sesión (`practice`, `qualifying`, `sprint`, `race`) con subtipo explícito;
-- entrada/participante de sesión;
-- parrilla y resultado clasificado;
+- clasificación concreta con exactamente dos intentos por piloto y mejor tiempo derivado;
+- parrilla derivada de los mejores tiempos;
+- carrera corta de 4 a 8 vueltas y una parada obligatoria por piloto;
+- resultado clasificado con estados propios;
 - vueltas, vuelta rápida y penalización;
 - standings de pilotos y constructores como proyección reproducible;
 - récord, museo, palmarés y awards.
 
 Estados de resultado como DNS, DNF y DSQ pertenecen a Racing. La posición de
 clasificación, posición de salida y resultado final son conceptos distintos.
+Racing no modela prácticas, sprint, Q1/Q2/Q3 ni una abstracción universal de
+sesiones: el flujo canónico es Gran Premio → clasificación → carrera.
 
 ## Football Lite
 

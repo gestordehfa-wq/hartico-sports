@@ -104,12 +104,13 @@ migraciones compartidas que se ejecuten mágicamente en todos los proyectos.
 
 ## Dominios deliberadamente separados
 
-- Racing usa eventos, sesiones, parrilla, vueltas, clasificaciones y estados de
-  resultado propios.
+- Racing usa Grandes Premios, clasificación concreta de dos intentos, parrilla,
+  carrera corta, vueltas y estados de resultado propios. No existe una tabla
+  universal de sesiones.
 - Football Lite usa partidos, equipos, plantillas e incidencias de fútbol.
 - Tennis usa torneos, cuadros, rondas, partidos y sets.
 
-`football_match`, `race_session` y `tennis_match` no heredan de un `sport_event`
+`football_match`, `grand_prix_event` y `tennis_match` no heredan de un `sport_event`
 persistido. Pueden compartir conceptos de presentación (fecha, estado visible,
 enlace) mediante read models locales, no mediante una tabla universal.
 

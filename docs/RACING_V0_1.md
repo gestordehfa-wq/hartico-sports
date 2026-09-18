@@ -1,89 +1,100 @@
 # Racing / Formula v0.1
 
-Este es el siguiente paso recomendado. El trabajo no forma parte del bootstrap
-actual y debe comenzar con aprobación explícita.
+Estado de implementación: vertical slice local completo; validación PostgreSQL
+pendiente cuando esté disponible Supabase CLI.
 
-## Resultado buscado
+## Resultado
 
-Un vertical slice que permita a cualquier visitante consultar una temporada y
-su calendario, pilotos, escuderías y circuitos, mientras un administrador puede
-mantener esos catálogos de forma segura y auditada.
+Racing v0.1 permite consultar y administrar temporadas, pilotos, escuderías,
+participaciones históricas, circuitos y Grandes Premios. Es un dominio propio,
+con repositorio Supabase dentro de `apps/racing`, RLS deny-by-default y auditoría
+de mutaciones. No usa datos, assets ni código de HFA.
 
-## Alcance propuesto
+## Decisiones de dominio
 
-### Incluido
+- `seasons.status` usa `draft`, `active`, `completed` y `archived`. Solo
+  `active` y `completed` son públicos; un índice parcial permite una sola activa.
+- Piloto y escudería no se acoplan: `season_driver_entries` conserva períodos,
+  rol, estado y número. Una exclusión temporal impide asignaciones solapadas del
+  mismo piloto en una temporada, pero permite cambios de equipo sucesivos.
+- `grand_prix_events` es una ronda de una temporada en un circuito. Ronda y slug
+  son únicos dentro de la temporada.
+- `circuits.default_laps` es obligatorio y está restringido a 4–8.
+  `grand_prix_events.race_laps` permite un override también restringido a 4–8;
+  la vista `grand_prix_calendar` calcula el valor efectivo.
+- El contenido local es ficticio y administrable; no hay integración con APIs,
+  marcas ni datasets oficiales.
 
-- temporada (`draft`, `published`, `archived`);
-- piloto con identidad pública mínima;
-- escudería y membresía de piloto efectiva por temporada;
-- circuito;
-- Gran Premio/round con circuito, fechas, orden y estado;
-- páginas públicas de calendario y directorios;
-- login y capacidades admin;
-- CRUD admin mínimo con validación, auditoría y RLS;
-- branding propio de Racing;
-- datos ficticios locales para desarrollo y tests.
+La propuesta previa `draft/published/archived` se sustituyó por el vocabulario
+operativo aprobado. La publicación se deriva del estado (`active` o
+`completed`), evitando mantener dos estados potencialmente contradictorios.
 
-### No incluido todavía
+## Competición canónica futura
 
-- prácticas, sprint, qualifying, parrilla y carrera;
-- vueltas, tiempos, sectores o telemetría;
-- resultados, DNS/DNF/DSQ y penalizaciones;
-- puntos, standings o reglamentos históricos;
-- récords, museo y awards;
-- feeds externos/importadores;
-- deploy o Supabase remoto.
-
-Limitar v0.1 a catálogos y calendario permite probar arquitectura, auth, RLS,
-migraciones, UI y administración antes de congelar el modelo complejo de sesión
-y resultados.
-
-## Secuencia de inicio
-
-1. Aprobar términos: `season`, `driver`, `constructor`, `circuit`, `grand_prix`.
-2. Decidir si el producto representa un campeonato ficticio, real o ambos; esto
-   afecta licencias, fuentes, IDs y datos permitidos.
-3. Escribir un ADR del modelo v0.1 y un diagrama de amenazas.
-4. Inicializar Supabase CLI local dentro de `apps/racing/supabase`.
-5. Crear la primera migración autocontenida con RLS deny-by-default.
-6. Añadir tests SQL anon/admin y seed ficticio.
-7. Implementar repositorios tipados y read models públicos.
-8. Crear rutas públicas y luego el flujo admin mínimo.
-9. Ejecutar tests, typecheck y build; documentar el runbook.
-
-## Esquema conceptual, no SQL definitivo
+Hartico Racing no reproduce un fin de semana de Fórmula 1 y no tendrá prácticas,
+sprint, Q1/Q2/Q3 ni una tabla `sessions`:
 
 ```text
-seasons
-constructors
-drivers
-season_entries (season + driver + constructor + car_number)
-circuits
-grand_prix_events (season + circuit + round + dates + status)
-profiles
-role_memberships
-audit_events
+Gran Premio
+  → Clasificación: intento 1 + intento 2
+  → Mejor tiempo válido numérico
+  → Parrilla
+  → Carrera de 4–8 vueltas
+  → Una parada obligatoria a pits por piloto
+  → Resultado
 ```
 
-`season_entries` evita sobrescribir la escudería o número histórico del piloto.
-Los nombres finales, constraints y estrategia de slugs se deciden en el ADR.
+Los intentos futuros se persistirán normalizados con número limitado a 1 o 2 y
+tiempo entero en milisegundos; el mejor tiempo será derivado, no editable. El
+pit stop se registrará con vuelta y no como un simple booleano. Ninguna de esas
+tablas se anticipa en v0.1.
 
-## Criterios de aceptación
+## Seguridad
 
-- un visitante solo ve temporadas/eventos publicados;
-- admin puede crear/editar sin DML directo inseguro;
-- usuario no admin no puede mutar ni inferir datos de draft;
-- RLS se prueba contra anon, authenticated y admin;
-- no hay secretos en frontend ni fixtures reales sin licencia confirmada;
-- reglas de dominio no importan React ni Supabase;
-- accesibilidad básica por teclado y responsive verificada;
-- `npm run typecheck` y `npm run build` pasan;
-- ninguna modificación en HFA ni recurso remoto.
+Supabase Auth gestiona la sesión. `role_memberships` acepta únicamente `admin`.
+La función `app_private.is_admin` es `security definer`, fija `search_path`, no
+se expone a anon y solo consulta membresías. `current_user_is_admin` ofrece al
+frontend una comprobación mínima, mientras cada escritura se vuelve a autorizar
+mediante RLS.
 
-## Decisiones que requieren al propietario
+Anon y authenticated leen solo filas publicables. Solo un authenticated con
+membresía admin puede insertar, actualizar o eliminar. `audit_events` no concede
+escritura a clientes: triggers propietarios registran actor, operación, entidad,
+id, before/after, timestamp y transacción.
 
-- nombre público definitivo: Racing, Formula u otro;
-- campeonato real vs. ficticio y política de datos/logos;
-- idiomas iniciales;
-- quiénes son los primeros administradores;
-- si v0.1 debe incluir una sesión de carrera sin resultados o esperar a v0.2.
+## Interfaz
+
+El lenguaje visual es Classic Windows Enterprise UI: workspace claro, navegación
+compacta, paneles rectangulares con title bar, status bars, formularios densos y
+tablas con scroll controlado. Se inspeccionó `C:\hfa` solo como referencia visual
+(la ruta solicitada `D:\hfa` no existía); no se copiaron CSS, DOM ni assets.
+
+Rutas públicas: `/`, `/season`, `/drivers`, `/drivers/:id`, `/teams`,
+`/teams/:id`, `/circuits`, `/circuits/:id` y `/calendar`.
+
+Rutas administrativas: `/login`, `/admin` y `/admin/:resource` para los seis
+catálogos. React Router está justificado por navegación/detalles/CRUD. Estado
+React local y un repositorio son suficientes; no se añadió store ni query cache.
+
+## Estado local
+
+No se crea ni vincula proyecto remoto. El frontend requiere:
+
+```powershell
+Copy-Item apps/racing/.env.example apps/racing/.env.local
+npx supabase start --workdir apps/racing
+npx supabase db reset --workdir apps/racing
+npm run dev:racing
+```
+
+La CLI no estaba instalada durante esta implementación, por lo que migraciones,
+seed y tests pgTAP quedaron listos pero su ejecución real no se declara. Para
+crear el primer admin, registrar el usuario mediante Auth local y ejecutar como
+propietario de base:
+
+```sql
+insert into public.role_memberships (user_id, role)
+values ('<auth.users.id>', 'admin');
+```
+
+Nunca se utiliza `service_role` en el navegador.

@@ -4,9 +4,8 @@ Hartico Sports es la base para crear productos deportivos independientes que
 comparten solo infraestructura genérica. No es una conversión de HFA ni un
 monolito multideporte.
 
-Estado actual: **fundación arquitectónica**. Hay shells mínimos para Racing,
-Football Lite y Tennis, pero todavía no hay dominio deportivo ni conexión a
-Supabase remota.
+Estado actual: **Racing v0.1 implementado localmente** y shells mínimos para
+Football Lite y Tennis. No existe conexión a Supabase remota ni despliegue.
 
 ## Principios
 
@@ -45,6 +44,8 @@ tooling/            Configuración común mínima; no contiene lógica de produc
 npm install
 npm run dev:racing
 npm run typecheck
+npm run lint
+npm run test
 npm run build
 ```
 

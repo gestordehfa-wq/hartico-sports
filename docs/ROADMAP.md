@@ -32,14 +32,19 @@ Entregables propuestos:
 
 Gate: ver [RACING_V0_1.md](RACING_V0_1.md).
 
-## Racing v0.2+
+## Racing v0.2 — Qualifying & Race
 
-- sesiones y entradas;
-- clasificación, parrilla y resultado de carrera;
-- DNS/DNF/DSQ y penalizaciones;
-- reglamentos de puntos versionados;
-- standings reproducibles de pilotos/constructores;
-- vueltas rápidas, estadísticas, récords, museo y awards por incrementos.
+- exactamente dos intentos de clasificación por piloto;
+- mejor tiempo válido calculado y parrilla derivada;
+- carrera corta de 4 a 8 vueltas;
+- una parada obligatoria a pits, registrada con su vuelta;
+- resultados y estados `finished`, `dnf`, `dns` y `dsq`;
+- validaciones deportivas específicas, sin tabla genérica de sesiones.
+
+El flujo canónico es Gran Premio → clasificación → parrilla → carrera. Racing no
+incorporará prácticas, sprint ni Q1/Q2/Q3. Puntos y standings quedan para un
+incremento posterior, junto con penalizaciones, estadísticas, récords, museo y
+awards.
 
 Cada incremento debe cerrar un flujo completo antes de abrir el siguiente.
 
