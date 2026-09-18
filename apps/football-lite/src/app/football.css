@@ -1,22 +1,24 @@
+@import "@hartico/ui/classic-tokens.css";
+
 :root {
   color: #17211b;
   background: #dfe5e1;
-  font-family: "Segoe UI", Tahoma, sans-serif;
-  font-size: 13px;
+  font-family: var(--classic-font);
+  font-size: var(--classic-font-size);
   font-synthesis: none;
-  --surface: #ffffff;
-  --workspace: #f1f4f2;
-  --toolbar: #e3e8e5;
-  --surface-alt: #edf1ef;
-  --border: #b7c1bb;
-  --border-strong: #74827a;
-  --text: #17211b;
-  --muted: #5c6961;
+  --surface: var(--classic-surface);
+  --workspace: var(--classic-workspace);
+  --toolbar: var(--classic-toolbar);
+  --surface-alt: var(--classic-surface-alt);
+  --border: var(--classic-border);
+  --border-strong: var(--classic-border-strong);
+  --text: var(--classic-text);
+  --muted: var(--classic-muted);
   --accent: var(--association-primary, #174f37);
   --accent-soft: var(--association-secondary, #dce9e1);
-  --danger: #922d37;
-  --warning: #815814;
-  --success: #176447;
+  --danger: var(--classic-danger);
+  --warning: var(--classic-warning);
+  --success: var(--classic-success);
 }
 
 * {

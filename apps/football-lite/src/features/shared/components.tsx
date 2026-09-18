@@ -1,5 +1,11 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import {
+  EmptyState as SharedEmptyState,
+  LoadingPanel,
+  StatusBadge as SharedStatusBadge,
+  WindowPanel,
+} from "@hartico/ui";
 import type { Match, MatchStatus, Team } from "../../domain/model";
 
 export function PageHeader({
@@ -16,22 +22,13 @@ export function PageHeader({
   );
 }
 export function Empty({ children }: Readonly<{ children: ReactNode }>) {
-  return (
-    <div className="empty-state">
-      <strong>Sin datos</strong>
-      <p>{children}</p>
-    </div>
-  );
+  return <SharedEmptyState>{children}</SharedEmptyState>;
 }
 export function Loader() {
-  return (
-    <div className="loading" role="status">
-      Cargando información…
-    </div>
-  );
+  return <LoadingPanel>Cargando información…</LoadingPanel>;
 }
 export function StatusBadge({ status }: Readonly<{ status: string }>) {
-  return <span className={`status ${status}`}>{status}</span>;
+  return <SharedStatusBadge status={status} />;
 }
 export function Window({
   title,
@@ -39,11 +36,9 @@ export function Window({
   status,
 }: Readonly<{ title: string; children: ReactNode; status?: string }>) {
   return (
-    <section className="window">
-      <header className="title-bar">{title}</header>
-      <div className="window-body">{children}</div>
-      {status && <footer className="status-bar">{status}</footer>}
-    </section>
+    <WindowPanel title={title} status={status}>
+      {children}
+    </WindowPanel>
   );
 }
 export function TeamMark({ team }: Readonly<{ team: Team | undefined }>) {

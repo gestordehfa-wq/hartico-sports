@@ -1,0 +1,21 @@
+:root {
+  --classic-font: "Segoe UI", Tahoma, sans-serif;
+  --classic-font-size: 13px;
+  --classic-control-height: 32px;
+  --classic-title-height: 35px;
+  --classic-radius: 2px;
+  --classic-space-1: 4px;
+  --classic-space-2: 8px;
+  --classic-space-3: 12px;
+  --classic-workspace: #f1f4f2;
+  --classic-surface: #ffffff;
+  --classic-surface-alt: #edf1ef;
+  --classic-toolbar: #e3e8e5;
+  --classic-border: #b7c1bb;
+  --classic-border-strong: #74827a;
+  --classic-text: #17211b;
+  --classic-muted: #5c6961;
+  --classic-danger: #922d37;
+  --classic-warning: #815814;
+  --classic-success: #176447;
+}

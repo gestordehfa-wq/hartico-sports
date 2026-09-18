@@ -27,7 +27,9 @@ export function ProductShell({ product, sections, children }: ProductShellProps)
     <div className="product-shell" style={theme}>
       <header className="product-header">
         <a className="product-brand" href="/" aria-label={`${product.name}, inicio`}>
-          <span className="product-mark" aria-hidden="true">HS</span>
+          <span className="product-mark" aria-hidden="true">
+            HS
+          </span>
           <span>{product.name}</span>
         </a>
         <span className="stage-badge">{product.stage}</span>
@@ -39,8 +41,8 @@ export function ProductShell({ product, sections, children }: ProductShellProps)
           <h1 id="product-title">{product.name}</h1>
           <p className="hero-copy">{product.description}</p>
           <p className="foundation-note">
-            Arquitectura preparada. El dominio y Supabase se implementarán por
-            incrementos aprobados.
+            Arquitectura preparada. El dominio y Supabase se implementarán por incrementos
+            aprobados.
           </p>
         </section>
 
