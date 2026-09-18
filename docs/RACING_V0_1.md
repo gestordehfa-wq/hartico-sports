@@ -82,15 +82,16 @@ No se crea ni vincula proyecto remoto. El frontend requiere:
 
 ```powershell
 Copy-Item apps/racing/.env.example apps/racing/.env.local
-npx supabase start --workdir apps/racing
-npx supabase db reset --workdir apps/racing
+npm run supabase:racing:start
+npm run supabase:racing:reset
+npm run supabase:racing:test
 npm run dev:racing
 ```
 
-La CLI no estaba instalada durante esta implementación, por lo que migraciones,
-seed y tests pgTAP quedaron listos pero su ejecución real no se declara. Para
-crear el primer admin, registrar el usuario mediante Auth local y ejecutar como
-propietario de base:
+La CLI está fijada como dependencia de desarrollo del workspace para evitar una
+instalación global. Requiere Docker Desktop o Podman en ejecución. Para crear el
+primer admin, registrar el usuario mediante Auth local y ejecutar como propietario
+de base:
 
 ```sql
 insert into public.role_memberships (user_id, role)

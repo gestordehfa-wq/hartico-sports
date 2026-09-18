@@ -37,11 +37,15 @@ tooling/            Configuración común mínima; no contiene lógica de produc
 
 - Node.js 24 LTS o una versión LTS compatible con la versión instalada de Vite.
 - npm 11 o compatible.
+- Docker Desktop o Podman para ejecutar Supabase local.
 
 ## Comandos
 
 ```bash
 npm install
+npm run supabase:racing:start
+npm run supabase:racing:reset
+npm run supabase:racing:test
 npm run dev:racing
 npm run typecheck
 npm run lint
