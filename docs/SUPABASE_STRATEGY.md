@@ -1,96 +1,150 @@
-# Estrategia Supabase
+# Estrategia Supabase canónica
 
-## Decisión: aislamiento por producto, con multitenancy acotado
+Estado: decisión vigente desde 2026-09-18. Reemplaza la propuesta anterior de
+un proyecto Supabase por deporte.
 
-Se recomienda una combinación razonable de las opciones A y C:
+## Decisión
 
-- un proyecto Supabase independiente por aplicación **y por entorno**;
-- ninguna tabla deportiva compartida entre Racing, Football Lite y Tennis;
-- Football Lite puede alojar varias asociaciones en su propio proyecto cuando
-  exista aislamiento RLS completo por `association_id`;
-- asociaciones con requisitos especiales pueden desplegar la misma app en un
-  proyecto dedicado.
-
-Ejemplo futuro:
+Hartico Sports usa un único proyecto Supabase Cloud llamado `hartico-sports`:
 
 ```text
-Racing:       racing-dev / racing-staging / racing-prod
-Football:     football-dev / football-staging / football-prod
-Tennis:       tennis-dev / tennis-staging / tennis-prod
-Enterprise:   football-cliente-x-prod (opcional)
+auth.*       identidad compartida
+racing.*     datos y autorización de Racing
+football.*   datos y autorización de Football Lite
+tennis.*     datos y autorización de Tennis
 ```
 
-Esta decisión evita que una migración, política incorrecta, agotamiento de cuota
-o incidente de Racing afecte Football Lite o Tennis. También permite backups,
-restores, regiones y releases independientes.
+No se crean entidades deportivas en `public`. Los nombres iguales (`seasons`,
+`players`, `teams`, `matches`, `role_memberships`, `audit_events`, `is_admin`)
+no colisionan porque todos los objetos y referencias internas están
+cualificados por schema. No existen claves foráneas entre deportes.
 
-## Por qué no un solo Supabase
+La auditoría de nombres encontró estas colisiones intencionales:
 
-Un proyecto compartido abarata el arranque, pero crea:
+| Objeto | Schemas |
+|---|---|
+| `role_memberships`, `seasons`, `audit_events` | racing, football, tennis |
+| `teams` | racing, football |
+| `players`, `matches`, `awards` | football, tennis |
+| `is_admin`, `current_user_is_admin` | racing, football, tennis |
+| `touch_updated_at`, `capture_audit` | football, tennis |
 
-- un radio de impacto común;
-- roles, políticas y migraciones coordinadas entre dominios no relacionados;
-- backups/restores indivisibles por producto;
-- riesgo de referencias accidentales entre esquemas;
-- límites de recursos y ventanas de mantenimiento compartidos;
-- una futura separación más cara cuando ya existan datos.
+Todas se resuelven por nombre cualificado. Los índices, constraints y triggers
+quedan asociados a relaciones dentro del schema propietario.
 
-Los pocos beneficios de SSO y panel único no compensan ese acoplamiento en esta
-fase. Si más adelante se necesita identidad común, se diseñará como servicio de
-identidad explícito; no se usará una base deportiva común como atajo.
+La infraestructura Cloud es compartida, pero cada aplicación conserva su
+frontera de dominio, cliente, tipos, RLS, funciones y auditoría. HFA no forma
+parte de este proyecto y permanece intacto.
 
-## Seguridad base
+## Auth, roles y perfiles
 
-1. RLS habilitado desde la migración que crea cada tabla expuesta.
-2. Deny-by-default: sin política no hay acceso.
-3. Vistas públicas separan campos públicos de PII y metadatos operativos.
-4. JWT identifica al usuario; pertenencia, rol y asociación se resuelven en
-   tablas protegidas o claims administrados por servidor.
-5. El frontend no recibe `service_role` ni secretos.
-6. Mutaciones multiobjeto o sensibles usan RPC/Edge Functions estrechas.
-7. Toda función privilegiada valida actor, fija `search_path` y registra auditoría.
-8. Storage usa buckets y paths por producto/tenant, con MIME y tamaño validados.
-9. Las pruebas de RLS incluyen intentos cruzados entre asociaciones.
+Los tres productos autentican contra el mismo `auth.users`. Un UUID puede tener
+una membresía independiente en cero, uno o varios schemas:
 
-## Modelo común mínimo por proyecto
+```text
+racing.role_memberships
+football.role_memberships
+tennis.role_memberships
+```
 
-El concepto común puede incluir, reimplementado en cada proyecto mediante sus
-propias migraciones:
+Cada `racing.is_admin`, `football.is_admin` y `tennis.is_admin` consulta solo su
+tabla. Ser admin en un producto no concede capacidades en otro. No existe un
+rol universal.
 
-- `profiles`: extensión mínima de `auth.users`, sin PII pública;
-- `roles`/`memberships` o capacidades equivalentes según el producto;
-- `audit_events`: registro append-only de acciones privilegiadas;
-- `app_settings`: configuración operativa no secreta;
-- buckets y políticas de assets.
+Se eliminó `racing.profiles`: no tenía un consumidor y solo duplicaba datos
+básicos de Auth. Football y Tennis tampoco crean perfiles. La sesión de Auth es
+la fuente de identidad; si un producto necesita más adelante datos propios de
+perfil, añadirá una tabla dentro de su schema mediante una migración nueva.
 
-No se crea un esquema SQL común remoto. Una migración ya liberada debe seguir
-siendo autocontenida aunque se origine desde una plantilla revisada.
+## RLS y funciones
 
-## Football Lite white-label
+Todas las tablas expuestas habilitan RLS al crearse. La matriz base es:
 
-Todas las filas tenant-scoped llevan `association_id NOT NULL`, incluido el
-camino completo hasta eventos y estadísticas. No se acepta aislamiento solo en
-la tabla padre. Índices y constraints incluyen el tenant cuando sea necesario
-para impedir referencias cruzadas.
+| Actor | Lectura publicada | Lectura autenticada | Escritura deportiva | Auditoría |
+|---|---:|---:|---:|---:|
+| `anon` | Sí | No | No | No |
+| `authenticated` normal | Sí | Sí | No | No |
+| admin del producto | Sí | Sí | Solo su producto | Solo lectura |
 
-Las políticas comparan contra una membresía confiable del usuario. Para datos
-públicos, una vista o RPC recibe un slug público y devuelve exclusivamente
-campos publicados. Las pruebas mínimas crean asociación A y B y demuestran que
-admin A no puede leer, escribir ni inferir objetos privados de B.
+Las funciones privilegiadas usan `security definer`, fijan `search_path`,
+referencian objetos cualificados y tienen grants explícitos. Los triggers no
+son RPC públicas. Cada producto conserva su propia tabla append-only
+`audit_events` con actor, acción, entidad, id, estado anterior/posterior y fecha.
 
-## Backups y operación
+## Data API
 
-- Política de backup y prueba de restore por proyecto/entorno.
-- Migraciones pasan primero por base local y staging.
-- Producción no recibe `db push` improvisado: se revisa el plan y se conserva la
-  migración exacta aplicada.
-- Cambios destructivos usan patrón expand/migrate/contract y backups verificados.
-- Un ledger o la historia de migraciones del CLI identifica el estado real.
+Las migraciones conceden `USAGE` de cada schema a `anon` y `authenticated`.
+Tablas, vistas y RPC reciben permisos explícitos; las tablas sensibles no
+reciben grants de escritura. Los default privileges revocan por defecto acceso
+a tablas, secuencias y funciones para `public`, `anon` y `authenticated`.
 
-## Lo que no se hace en esta fase
+Los UUID usan `extensions.gen_random_uuid()`. Las secuencias identity de
+auditoría no necesitan grants cliente porque solo escriben triggers propietarios.
 
-- crear o vincular proyectos remotos;
-- copiar SQL de HFA;
-- definir todavía el esquema exhaustivo de los tres deportes;
-- configurar Auth providers, dominios, Storage o secretos de producción;
-- prometer SSO entre aplicaciones.
+Supabase no expone schemas personalizados automáticamente. En Dashboard se
+deben configurar como únicos schemas deportivos expuestos:
+
+```text
+racing
+football
+tennis
+```
+
+No se debe añadir `public` solo por compatibilidad ni exponer `auth`,
+`extensions` u otros schemas internos.
+
+## Historial único de migraciones
+
+El proyecto remoto tiene un solo ledger. Las fuentes continúan junto a cada
+dominio en `apps/<producto>/supabase/migrations`, pero solo la raíz `supabase/`
+se enlaza o publica.
+
+`tooling/assemble-supabase.mjs` genera nombres globalmente ordenados en
+`supabase/migrations` y copia los tests de dominio a `supabase/tests`.
+`npm run supabase:check` falla si una copia se editó, falta o apareció SQL no
+registrado. Así se conserva propiedad por app sin ejecutar tres `db push` con
+historias incompatibles.
+
+Flujo para un cambio futuro:
+
+1. añadir una migración nueva al dominio propietario;
+2. registrarla en el ensamblador con un timestamp global nuevo;
+3. ejecutar `npm run supabase:assemble`;
+4. revisar `npm run supabase:check` y los quality gates;
+5. hacer un único dry-run y un único push desde la raíz, tras aprobación.
+
+Las migraciones ya aplicadas no se editan.
+
+## Clientes y variables
+
+Los clientes fijan el schema en código, no mediante una variable de entorno:
+
+```text
+Racing        db.schema = racing
+Football Lite db.schema = football
+Tennis        db.schema = tennis
+```
+
+Los tres pares URL/key apuntarán al mismo proyecto, aunque conservan prefijos
+por producto para reducir errores de configuración en Vercel:
+
+```text
+VITE_RACING_SUPABASE_URL
+VITE_RACING_SUPABASE_ANON_KEY
+VITE_FOOTBALL_SUPABASE_URL
+VITE_FOOTBALL_SUPABASE_ANON_KEY
+VITE_TENNIS_SUPABASE_URL
+VITE_TENNIS_SUPABASE_ANON_KEY
+```
+
+Nunca se usan `service_role`, secret keys, contraseña de base o JWT secret en
+el frontend.
+
+## Límites operativos
+
+Compartir proyecto implica cuota, backup, región y ventana de mantenimiento
+comunes. El aislamiento implementado es lógico y de autorización, no físico.
+Se mantienen tres proyectos Vercel (`hartico-racing`, `hartico-football`,
+`hartico-tennis`) y tres dominios futuros, pero no se configuran en esta fase.
+
+No se ha enlazado la CLI, aplicado SQL remoto, modificado Auth ni desplegado.

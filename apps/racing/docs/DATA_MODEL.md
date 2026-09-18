@@ -1,9 +1,7 @@
 # Modelo de datos — Racing v0.1
 
 ```text
-auth.users ──1 profiles
-     │
-     └──0..1 role_memberships (admin)
+auth.users ──0..1 racing.role_memberships (admin)
 
 seasons 1──* season_driver_entries *──1 drivers
                          │
@@ -41,9 +39,10 @@ sesiones. `race_laps` solo existe como override opcional del valor del circuito;
 
 ## Identidad, autorización y auditoría
 
-`profiles` extiende `auth.users` sin exponer PII. `role_memberships` mantiene el
-único rol privilegiado de v0.1. `audit_events` es append-only desde el punto de
-vista del cliente y recibe el estado anterior/posterior mediante triggers.
+No existe una tabla `profiles`: Auth es la fuente de identidad y no se duplican
+datos básicos sin necesidad de producto. `racing.role_memberships` mantiene el
+único rol privilegiado de v0.1. `racing.audit_events` es append-only desde el
+punto de vista del cliente y recibe el estado anterior/posterior mediante triggers.
 
 ## Extensión prevista, no implementada
 

@@ -5,9 +5,9 @@ comparten solo infraestructura genérica. No es una conversión de HFA ni un
 monolito multideporte.
 
 Estado actual: **Racing v0.1**, **Football Lite v0.1** y **Tennis v0.1**
-implementados localmente. La preparación Cloud v0.1 está versionada; la conexión
-remota y el despliegue requieren tres proyectos Supabase nuevos y las cuentas
-GitHub/Vercel del usuario.
+implementados localmente. La preparación Cloud usa un único proyecto Supabase
+`hartico-sports`, Auth compartido y schemas deportivos aislados. No se ha
+ejecutado ninguna migración remota ni despliegue.
 
 ## Principios
 
@@ -33,6 +33,7 @@ packages/
   ui/              Primitivas visuales accesibles y sin marca fija
 docs/               Auditoría, arquitectura, estrategia y roadmap
 tooling/            Configuración común mínima; no contiene lógica de producto
+supabase/            Configuración, historial y tests del único proyecto Cloud
 ```
 
 ## Requisitos
@@ -46,11 +47,11 @@ tooling/            Configuración común mínima; no contiene lógica de produc
 
 ```bash
 npm install
-npm run supabase:racing:start
-npm run supabase:racing:reset
-npm run supabase:racing:test
+npm run supabase:assemble
+npm run supabase:check
 npm run dev:racing
 npm run dev:football-lite
+npm run dev:tennis
 npm run typecheck
 npm run lint
 npm run test
@@ -75,5 +76,5 @@ npm run build
 ## Alcance de esta fundación
 
 Este repositorio no contiene secretos, datos de producción, despliegues ni
-código copiado de HFA. Cloud v0.1 conserva tres bases y tres proyectos Vercel
-separados dentro de un único monorepo.
+código copiado de HFA. Cloud conserva un Supabase con tres schemas y tres
+proyectos Vercel separados dentro de un único monorepo.

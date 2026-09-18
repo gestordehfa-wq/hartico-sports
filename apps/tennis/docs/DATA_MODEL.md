@@ -2,7 +2,8 @@
 
 ## Frontera
 
-Tennis tiene un esquema propio. No referencia tablas de Racing o Football Lite y no define entidades deportivas universales. El proyecto Supabase futuro también será independiente.
+Tennis vive en el schema `tennis` del proyecto compartido. No referencia tablas
+de Racing o Football Lite y no define entidades deportivas universales.
 
 ## Relaciones
 

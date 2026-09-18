@@ -1,202 +1,87 @@
 # Arquitectura de Hartico Sports
 
-Estado: decisión inicial, revisable mediante ADR cuando exista evidencia nueva.
+## Vista general
 
-## Decisión
-
-Hartico Sports será un monorepo de código y documentación, no un monolito de
-runtime. Cada aplicación es una unidad desplegable y una frontera de dominio:
-
-```text
-                         packages/ui
-                              ↑
-apps/racing ───────┬── packages/auth
-apps/football-lite ├── packages/database
-apps/tennis ───────┴── packages/shared
-
-racing domain       football domain       tennis domain
-      ↓                    ↓                    ↓
-Supabase Racing      Supabase Football      Supabase Tennis
-```
-
-No existe dependencia directa entre aplicaciones ni una base de datos deportiva
-compartida. Los paquetes comunes dependen solo de APIs de plataforma o de otros
-paquetes comunes de nivel inferior; nunca importan desde `apps/`.
-
-## Árbol definitivo de fundación
+Hartico Sports es un monorepo con tres aplicaciones desplegables y dominios
+independientes. Comparten componentes e infraestructura transversal, pero no
+modelos deportivos:
 
 ```text
-hartico-sports/
-├── apps/
-│   ├── racing/
-│   │   ├── src/
-│   │   │   ├── app/
-│   │   │   └── domain/
-│   │   └── supabase/
-│   │       ├── migrations/
-│   │       └── tests/
-│   ├── football-lite/
-│   │   └── (misma frontera, dominio propio)
-│   └── tennis/
-│       └── (misma frontera, dominio propio)
-├── packages/
-│   ├── auth/
-│   ├── database/
-│   ├── shared/
-│   └── ui/
-├── docs/
-├── tooling/
-├── AGENTS.md
-├── package.json
-└── tsconfig.base.json
+apps/racing -----------┐
+apps/football-lite ----+--> packages/*
+apps/tennis -----------┘
+
+                           Supabase Cloud: hartico-sports
+                         ┌──────────┬──────────┬─────────┐
+shared auth.users ------>│ racing.* │football.*│ tennis.*│
+                         └──────────┴──────────┴─────────┘
 ```
 
-No se crea todavía `packages/admin`: navegación administrativa, permisos y
-operaciones son inicialmente propiedad de cada aplicación. Cuando dos productos
-tengan flujos equivalentes, se extraerán primitivas visuales o contratos; nunca
-reglas deportivas. Esto evita fijar una abstracción a partir de un solo caso.
+Una app puede importar paquetes; los paquetes no importan apps y una app no
+importa otra. `football.matches`, `racing.grand_prix_events` y
+`tennis.matches` no derivan de una entidad universal.
 
 ## Capas por aplicación
 
-Cada feature futura sigue esta dirección de dependencias:
-
 ```text
-UI / route
-    ↓
-application use case
-    ↓
-domain types and rules ← pure tests
-    ↓
-repository interface
-    ↓
-Supabase adapter
+UI / ruta
+  -> caso de uso
+  -> reglas y tipos de dominio puros
+  -> repositorio del producto
+  -> cliente Supabase fijado al schema del producto
 ```
 
-En una feature pequeña estas capas pueden ser carpetas o archivos, no clases ni
-frameworks. La regla importante es que la regla deportiva sea testeable sin DOM
-ni Supabase y que el acceso remoto no quede disperso en componentes.
+React no contiene reglas deportivas ni llamadas Supabase dispersas. La sesión
+Auth es común, pero cada contexto consulta el RPC `current_user_is_admin` de su
+schema y el servidor vuelve a autorizar cada operación con RLS.
 
-## Responsabilidad de los paquetes
+## Base de datos
 
-### `@hartico/ui`
+La separación física por proyecto fue reemplazada por separación PostgreSQL:
 
-Tokens, layout, feedback, botones, campos, modal accesible y tabla genérica. No
-incluye nombres de rutas, menú de un deporte, tablas de clasificación ni
-branding HFA. Los productos inyectan tema mediante variables CSS y configuración.
+- `racing`: temporadas, pilotos, equipos, inscripciones, circuitos y GP;
+- `football`: temporadas, competiciones, equipos, jugadores, partidos,
+  standings y estadísticas;
+- `tennis`: temporadas, jugadores, torneos, ediciones, cuadro, sets, ranking y
+  H2H;
+- `auth`: identidad compartida administrada por Supabase.
 
-### `@hartico/shared`
+Cada schema tiene `role_memberships`, `is_admin` y `audit_events` propios. No
+hay roles globales, tablas deportivas en `public` ni referencias cruzadas.
 
-Tipos y funciones puras sin I/O: configuración de producto, IDs opacos,
-fechas/formatos neutros y resultados tipados. Una temporada se puede representar
-como capacidad opcional; no se obliga a todas las entidades a tener `season_id`.
+## Migraciones
 
-### `@hartico/auth`
+Los archivos de `apps/*/supabase/migrations` son fuentes por dominio. La raíz
+`supabase/migrations` es el artefacto ordenado que consume la única
+configuración CLI. El ensamblador determinista y `supabase:check` evitan drift.
+Nunca se enlazan las carpetas de app ni se hacen tres pushes al mismo proyecto.
 
-Contratos de sesión, perfil y capacidades; guards de UI y adaptador futuro de
-Supabase Auth. La UI puede orientar al usuario, pero RLS/RPC vuelve a comprobar
-toda autorización. Los roles concretos se declaran en cada aplicación.
+## Paquetes compartidos
 
-### `@hartico/database`
+- `@hartico/ui`: primitivas accesibles y shell sin reglas deportivas.
+- `@hartico/shared`: utilidades puras transversales.
+- `@hartico/auth`: contratos de sesión/capacidades, no roles universales.
+- `@hartico/database`: configuración pública y errores, no repositorios de
+  deportes.
 
-Creación/configuración segura del cliente, manejo uniforme de errores y tipos
-comunes de infraestructura. No contiene un repositorio universal de deportes ni
-migraciones compartidas que se ejecuten mágicamente en todos los proyectos.
+Una abstracción requiere dos consumidores con semántica equivalente o una
+capacidad inequívocamente transversal.
 
-## Dominios deliberadamente separados
+## Seguridad
 
-- Racing usa Grandes Premios, clasificación concreta de dos intentos, parrilla,
-  carrera corta, vueltas y estados de resultado propios. No existe una tabla
-  universal de sesiones.
-- Football Lite usa partidos, equipos, plantillas e incidencias de fútbol.
-- Tennis usa torneos, cuadros, rondas, partidos y sets.
+- RLS en toda tabla expuesta desde su creación.
+- Grants y `USAGE` explícitos; default privileges deny-by-default.
+- `security definer` con `search_path` fijo, objetos cualificados y grants
+  mínimos.
+- Auditoría append-only por producto.
+- Ningún secreto privilegiado en variables `VITE_*`.
+- Tests pgTAP positivos, negativos y de aislamiento cruzado.
 
-`football_match`, `grand_prix_event` y `tennis_match` no heredan de un `sport_event`
-persistido. Pueden compartir conceptos de presentación (fecha, estado visible,
-enlace) mediante read models locales, no mediante una tabla universal.
+## Despliegue
 
-## Estado y acceso a datos
+Un repositorio GitHub alimentará tres proyectos Vercel con roots distintos. Los
+tres usan la misma URL/key pública de Supabase, pero sus schemas están fijados
+en código. Los dominios futuros son `racing.hfa.bar`, `football.hfa.bar` y
+`tennis.hfa.bar`; configurarlos no forma parte de esta fase.
 
-- Estado de formulario y UI: estado React local.
-- Estado remoto: hooks/repositories por feature. Se evaluará TanStack Query solo
-  cuando Racing tenga invalidación/caché asíncrona suficiente para justificarla.
-- Estado global: reservado para sesión, tema y configuración del producto.
-- Mutaciones críticas: RPC transaccional o Edge Function; después se refresca el
-  read model autoritativo.
-- Lectura pública: vistas explícitas que omiten PII y campos operativos.
-- No se implementa offline ni caché persistente en la fundación.
-
-## Routing y administración
-
-Cada app posee su router y mapa de navegación. El shell compartido recibe items
-ya autorizados; no conoce rutas deportivas. React Router se añadirá a Racing al
-crear la segunda pantalla real, evitando una dependencia sin uso en el bootstrap.
-
-Administración es una superficie por capacidades, no un rol omnipotente en el
-frontend. Las operaciones de alto impacto ofrecen preview, confirmación,
-auditoría y resultado identificable.
-
-## UI, formularios y branding
-
-Los tokens comunes definen semántica (`surface`, `text`, `accent`, `danger`) y
-accesibilidad. Cada app suministra valores de marca. Football Lite aceptará en
-el futuro una configuración validada como:
-
-```ts
-type AssociationBranding = {
-  associationId: string;
-  name: string;
-  acronym: string;
-  logoUrl?: string;
-  theme: { primary: string; accent: string };
-};
-```
-
-La configuración no autoriza acceso: `association_id` se deriva de membresías y
-claims confiables, nunca de un selector enviado por el cliente.
-
-## Migraciones, pruebas y observabilidad
-
-- Cada app tiene migraciones inmutables, ordenadas y autocontenidas.
-- Toda tabla expuesta habilita RLS en la misma migración que la crea.
-- Cada RPC `security definer` fija `search_path`, valida actor y revoca ejecución
-  pública salvo concesión explícita.
-- Las pruebas SQL cubren acceso anon/auth/roles y aislamiento entre tenants.
-- Las reglas de dominio tienen unit tests; repositories tienen integración local;
-  los flujos críticos tienen e2e cuando existe producto navegable.
-- Los logs usan códigos estables y metadatos allow-listed; nunca tokens, emails o
-  payloads completos.
-
-## Criterios para compartir código
-
-Una extracción a `packages/` requiere:
-
-1. dos consumidores reales o una capacidad inequívocamente transversal;
-2. semántica idéntica, no solo nombres parecidos;
-3. API menor que las implementaciones sustituidas;
-4. pruebas independientes del deporte;
-5. posibilidad de versionar el cambio sin coordinar datos entre productos.
-
-Si falla un criterio, la duplicación pequeña y explícita es preferible.
-
-## Decisiones tecnológicas
-
-| Decisión | Elección | Motivo |
-|---|---|---|
-| Lenguaje | TypeScript estricto | Contratos claros y refactors seguros desde el inicio. |
-| UI | React | Ecosistema estable y composición adecuada para admin/público. |
-| Build | Vite | Desarrollo y builds simples para SPAs independientes. |
-| Workspace | npm workspaces | npm ya está disponible; evita instalar pnpm solo por preferencia. |
-| Orquestador | Ninguno | Tres apps pequeñas no justifican Turborepo todavía. |
-| Backend | Supabase/PostgreSQL | Auth, RLS, Storage, RPC y experiencia operativa existente. |
-| CSS | Tokens + CSS normal compartido | Pocas dependencias y control de marca. |
-| Estado | React local + repositorios | No hay evidencia para un store global. |
-
-## Triggers de reevaluación
-
-- Adoptar pnpm si el tiempo/espacio de instalación se vuelve un problema medido.
-- Adoptar Turborepo si CI necesita caché y un grafo de tareas que npm no resuelve.
-- Extraer `packages/admin` después del segundo flujo administrativo equivalente.
-- Añadir una librería de queries cuando Racing tenga múltiples recursos remotos
-  con invalidación real.
-- Separar un tenant Football Lite a proyecto dedicado si exige backup, región,
-  SLO o personalización operativa independiente.
+HFA (`C:\hfa`) es externo, estable y de solo lectura.

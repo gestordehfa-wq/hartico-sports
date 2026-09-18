@@ -1,7 +1,7 @@
 # Modelo de datos — Football Lite v0.1
 
-Este modelo pertenece solo a `apps/football-lite`. No reutiliza tablas de Racing,
-Tennis o HFA y se despliega en un proyecto Supabase independiente.
+Este modelo pertenece solo a `apps/football-lite`. Vive en el schema `football`
+del proyecto compartido y no referencia tablas de Racing, Tennis o HFA.
 
 ## Relaciones
 

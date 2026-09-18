@@ -51,8 +51,8 @@ tablas se anticipa en v0.1.
 
 ## Seguridad
 
-Supabase Auth gestiona la sesión. `role_memberships` acepta únicamente `admin`.
-La función `app_private.is_admin` es `security definer`, fija `search_path`, no
+Supabase Auth compartido gestiona la sesión. `racing.role_memberships` acepta únicamente `admin`.
+La función `racing.is_admin` es `security definer`, fija `search_path`, no
 se expone a anon y solo consulta membresías. `current_user_is_admin` ofrece al
 frontend una comprobación mínima, mientras cada escritura se vuelve a autorizar
 mediante RLS.
@@ -78,23 +78,20 @@ React local y un repositorio son suficientes; no se añadió store ni query cach
 
 ## Estado local
 
-No se crea ni vincula proyecto remoto. El frontend requiere:
+No se vincula ni modifica el proyecto remoto. El frontend requiere:
 
 ```powershell
 Copy-Item apps/racing/.env.example apps/racing/.env.local
-npm run supabase:racing:start
-npm run supabase:racing:reset
-npm run supabase:racing:test
 npm run dev:racing
 ```
 
-La CLI está fijada como dependencia de desarrollo del workspace para evitar una
-instalación global. Requiere Docker Desktop o Podman en ejecución. Para crear el
-primer admin, registrar el usuario mediante Auth local y ejecutar como propietario
-de base:
+El historial Cloud se ensambla y valida desde la raíz con
+`npm run supabase:assemble` y `npm run supabase:check`. Para crear el primer
+admin, registrar una única identidad compartida y ejecutar como propietario de
+base:
 
 ```sql
-insert into public.role_memberships (user_id, role)
+insert into racing.role_memberships (user_id, role)
 values ('<auth.users.id>', 'admin');
 ```
 

@@ -45,13 +45,14 @@ backend.
 
 ## Conexión Cloud
 
-1. Crear o seleccionar un proyecto Supabase exclusivo para Football Lite.
-2. Revisar el destino; no usar HFA ni otro producto.
-3. Aplicar en orden `apps/football-lite/supabase/migrations/*.sql`.
-4. Crear el primer usuario con Supabase Auth.
-5. Insertar su UUID en `role_memberships` mediante una operación administrativa
+1. Seleccionar el único proyecto Supabase `hartico-sports`; nunca HFA.
+2. Exponer `football` en Data API junto con `racing` y `tennis`.
+3. Aplicar únicamente el historial raíz `supabase/migrations` mediante el flujo
+   único documentado; nunca migrar esta app por separado.
+4. Crear el usuario en el Auth compartido.
+5. Insertar su UUID en `football.role_memberships` mediante una operación administrativa
    controlada; el cliente no puede crear membresías.
-6. Copiar `.env.example` a `.env.local` y completar URL/publishable key.
+6. Copiar `.env.example` a `.env.local` y completar la URL/key compartida.
 7. Configurar las variables de marca del holo.
 
 No se almacena `service_role` en el frontend. Ninguna variable `VITE_*` contiene
