@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+.vite/
+.turbo/
+.DS_Store
+*.log
+
+.env
+.env.*
+!.env.example
+
+supabase/.branches/
+supabase/.temp/
