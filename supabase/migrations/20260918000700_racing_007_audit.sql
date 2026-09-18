@@ -1,3 +1,4 @@
+-- Generated from apps/racing/supabase/migrations/007_audit.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 create table racing.audit_events (
   id bigint generated always as identity primary key,
   actor_id uuid references auth.users(id) on delete set null,

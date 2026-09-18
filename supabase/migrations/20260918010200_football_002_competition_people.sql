@@ -1,3 +1,4 @@
+-- Generated from apps/football-lite/supabase/migrations/002_competition_people.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 create table football.competitions (
   id uuid primary key default extensions.gen_random_uuid(),
   season_id uuid not null references football.seasons(id) on delete restrict,

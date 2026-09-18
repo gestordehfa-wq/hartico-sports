@@ -1,3 +1,4 @@
+-- Generated from apps/football-lite/supabase/migrations/005_audit.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 create table football.audit_events (
   id bigint generated always as identity primary key,
   actor_id uuid,

@@ -1,3 +1,4 @@
+-- Generated from apps/racing/supabase/migrations/006_rbac_rls.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 grant select on racing.seasons, racing.drivers, racing.teams, racing.season_driver_entries, racing.circuits, racing.grand_prix_events, racing.grand_prix_calendar to anon, authenticated;
 grant insert, update, delete on racing.seasons, racing.drivers, racing.teams, racing.season_driver_entries, racing.circuits, racing.grand_prix_events to authenticated;
 

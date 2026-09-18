@@ -1,3 +1,4 @@
+-- Generated from apps/football-lite/supabase/tests/002_rls_audit.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 begin;
 create extension if not exists pgtap with schema extensions;
 select plan(21);

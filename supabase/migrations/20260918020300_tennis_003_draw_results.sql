@@ -1,3 +1,4 @@
+-- Generated from apps/tennis/supabase/migrations/003_draw_results.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 create or replace function tennis.validate_entry_seed()
 returns trigger language plpgsql set search_path = '' as $$
 declare size integer;

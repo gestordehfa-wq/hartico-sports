@@ -1,3 +1,4 @@
+-- Generated from apps/racing/supabase/migrations/004_driver_entries.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 create table racing.season_driver_entries (
   id uuid primary key default extensions.gen_random_uuid(),
   season_id uuid not null references racing.seasons(id) on delete restrict,

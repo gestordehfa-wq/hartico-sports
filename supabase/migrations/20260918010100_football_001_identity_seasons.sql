@@ -1,3 +1,4 @@
+-- Generated from apps/football-lite/supabase/migrations/001_identity_seasons.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 create extension if not exists pgcrypto with schema extensions;
 
 create schema if not exists football;

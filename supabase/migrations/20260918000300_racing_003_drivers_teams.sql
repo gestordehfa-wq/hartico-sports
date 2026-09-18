@@ -1,3 +1,4 @@
+-- Generated from apps/racing/supabase/migrations/003_drivers_teams.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 create table racing.drivers (
   id uuid primary key default extensions.gen_random_uuid(),
   display_name text not null check (length(trim(display_name)) between 1 and 100),

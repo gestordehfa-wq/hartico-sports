@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { FootballTable, MutationValue } from "../domain/model";
 
 type FootballDatabase = {
-  public: {
+  football: {
     Tables: Record<
       FootballTable,
       {
@@ -17,14 +17,15 @@ type FootballDatabase = {
   };
 };
 
-export type FootballSupabaseClient = SupabaseClient<FootballDatabase>;
+export type FootballSupabaseClient = SupabaseClient<FootballDatabase, "football">;
 const url = import.meta.env.VITE_FOOTBALL_SUPABASE_URL?.trim();
-const publishableKey = import.meta.env.VITE_FOOTBALL_SUPABASE_PUBLISHABLE_KEY?.trim();
+const publishableKey = import.meta.env.VITE_FOOTBALL_SUPABASE_ANON_KEY?.trim();
 export const databaseConfigured = Boolean(url && publishableKey);
 
 export const supabase: FootballSupabaseClient | null =
   url && publishableKey
-    ? createClient<FootballDatabase>(url, publishableKey, {
+    ? createClient<FootballDatabase, "football">(url, publishableKey, {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+        db: { schema: "football" },
       })
     : null;

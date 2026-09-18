@@ -1,3 +1,4 @@
+-- Generated from apps/racing/supabase/tests/001_domain_constraints.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 begin;
 create extension if not exists pgtap with schema extensions;
 select plan(20);

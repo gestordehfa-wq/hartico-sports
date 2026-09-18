@@ -1,3 +1,4 @@
+-- Generated from apps/racing/supabase/migrations/001_core_identity.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 create extension if not exists pgcrypto with schema extensions;
 create extension if not exists btree_gist with schema extensions;
 

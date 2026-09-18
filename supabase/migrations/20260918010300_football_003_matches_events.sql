@@ -1,3 +1,4 @@
+-- Generated from apps/football-lite/supabase/migrations/003_matches_events.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 create table football.matches (
   id uuid primary key default extensions.gen_random_uuid(),
   competition_id uuid not null,

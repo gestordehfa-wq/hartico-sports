@@ -1,3 +1,4 @@
+-- Generated from apps/tennis/supabase/migrations/004_audit.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 create table tennis.audit_events (
   id bigint generated always as identity primary key,
   actor_id uuid,

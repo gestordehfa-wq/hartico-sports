@@ -1,3 +1,4 @@
+-- Generated from apps/tennis/supabase/migrations/001_identity_catalogs.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 create extension if not exists pgcrypto with schema extensions;
 
 create schema if not exists tennis;

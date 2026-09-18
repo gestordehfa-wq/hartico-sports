@@ -1,3 +1,4 @@
+-- Generated from apps/racing/supabase/migrations/002_seasons.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 create table racing.seasons (
   id uuid primary key default extensions.gen_random_uuid(),
   name text not null check (length(trim(name)) between 1 and 120),

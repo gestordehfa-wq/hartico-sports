@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { MutationValue, TennisTable } from "../domain/model";
 
 type TennisDatabase = {
-  public: {
+  tennis: {
     Tables: Record<
       TennisTable,
       {
@@ -20,13 +20,14 @@ type TennisDatabase = {
     };
   };
 };
-export type TennisSupabaseClient = SupabaseClient<TennisDatabase>;
+export type TennisSupabaseClient = SupabaseClient<TennisDatabase, "tennis">;
 const url = import.meta.env.VITE_TENNIS_SUPABASE_URL?.trim();
-const publishableKey = import.meta.env.VITE_TENNIS_SUPABASE_PUBLISHABLE_KEY?.trim();
+const publishableKey = import.meta.env.VITE_TENNIS_SUPABASE_ANON_KEY?.trim();
 export const databaseConfigured = Boolean(url && publishableKey);
 export const supabase: TennisSupabaseClient | null =
   url && publishableKey
-    ? createClient<TennisDatabase>(url, publishableKey, {
+    ? createClient<TennisDatabase, "tennis">(url, publishableKey, {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+        db: { schema: "tennis" },
       })
     : null;

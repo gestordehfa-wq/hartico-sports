@@ -1,3 +1,4 @@
+-- Generated from apps/tennis/supabase/migrations/002_competition.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 create table tennis.tournament_entries (
   id uuid primary key default extensions.gen_random_uuid(),
   tournament_edition_id uuid not null references tennis.tournament_editions(id) on delete cascade,

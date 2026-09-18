@@ -1,3 +1,4 @@
+-- Generated from apps/racing/supabase/migrations/005_circuits_grand_prix.sql by tooling/assemble-supabase.mjs. Do not edit this copy.
 create table racing.circuits (
   id uuid primary key default extensions.gen_random_uuid(),
   name text not null unique check (length(trim(name)) between 1 and 140),
