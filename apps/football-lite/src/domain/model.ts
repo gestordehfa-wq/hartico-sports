@@ -1,0 +1,167 @@
+export const seasonStatuses = ["draft", "active", "completed", "archived"] as const;
+export type SeasonStatus = (typeof seasonStatuses)[number];
+
+export const competitionTypes = ["league", "cup", "supercup"] as const;
+export type CompetitionType = (typeof competitionTypes)[number];
+export const competitionStatuses = ["draft", "active", "completed", "archived"] as const;
+export type CompetitionStatus = (typeof competitionStatuses)[number];
+
+export const entityStatuses = ["active", "inactive", "archived"] as const;
+export type EntityStatus = (typeof entityStatuses)[number];
+export const playerPositions = ["POR", "DEF", "MED", "ATK"] as const;
+export type PlayerPosition = (typeof playerPositions)[number];
+
+export const rosterRoles = ["player", "captain", "loan"] as const;
+export type RosterRole = (typeof rosterRoles)[number];
+export const rosterStatuses = ["active", "completed", "released"] as const;
+export type RosterStatus = (typeof rosterStatuses)[number];
+
+export const matchStatuses = ["scheduled", "live", "finished", "postponed", "cancelled"] as const;
+export type MatchStatus = (typeof matchStatuses)[number];
+export const eventTypes = ["goal", "assist", "yellow_card", "red_card", "own_goal"] as const;
+export type MatchEventType = (typeof eventTypes)[number];
+export const awardTypes = ["champion", "top_scorer", "top_assister", "best_player"] as const;
+export type AwardType = (typeof awardTypes)[number];
+
+type Timestamps = Readonly<{ created_at: string; updated_at: string }>;
+
+export type Season = Timestamps &
+  Readonly<{
+    id: string;
+    name: string;
+    slug: string;
+    status: SeasonStatus;
+    start_date: string;
+    end_date: string;
+  }>;
+
+export type Competition = Timestamps &
+  Readonly<{
+    id: string;
+    season_id: string;
+    name: string;
+    short_name: string;
+    type: CompetitionType;
+    status: CompetitionStatus;
+    logo_url: string | null;
+  }>;
+
+export type Team = Timestamps &
+  Readonly<{
+    id: string;
+    name: string;
+    short_name: string;
+    code: string;
+    country: string;
+    country_code: string;
+    logo_url: string | null;
+    status: EntityStatus;
+  }>;
+
+export type Player = Timestamps &
+  Readonly<{
+    id: string;
+    display_name: string;
+    real_name: string | null;
+    nationality: string;
+    country_code: string;
+    position: PlayerPosition;
+    avatar_url: string | null;
+    status: EntityStatus;
+  }>;
+
+export type SeasonPlayerRoster = Timestamps &
+  Readonly<{
+    id: string;
+    season_id: string;
+    player_id: string;
+    team_id: string;
+    start_date: string | null;
+    end_date: string | null;
+    role: RosterRole;
+    status: RosterStatus;
+  }>;
+
+export type Match = Timestamps &
+  Readonly<{
+    id: string;
+    competition_id: string;
+    season_id: string;
+    home_team_id: string;
+    away_team_id: string;
+    matchday: number | null;
+    scheduled_at: string;
+    status: MatchStatus;
+    home_score: number | null;
+    away_score: number | null;
+    referee_name: string | null;
+  }>;
+
+export type MatchEvent = Readonly<{
+  id: string;
+  match_id: string;
+  player_id: string;
+  team_id: string;
+  event_type: MatchEventType;
+  minute: number | null;
+  related_player_id: string | null;
+  created_at: string;
+}>;
+
+export type MatchPlayerAppearance = Readonly<{
+  id: string;
+  match_id: string;
+  player_id: string;
+  team_id: string;
+  starter: boolean;
+  created_at: string;
+}>;
+
+export type Award = Readonly<{
+  id: string;
+  season_id: string;
+  competition_id: string | null;
+  award_type: AwardType;
+  player_id: string | null;
+  team_id: string | null;
+  title: string;
+  description: string | null;
+  created_at: string;
+}>;
+
+export type FootballSnapshot = Readonly<{
+  seasons: readonly Season[];
+  competitions: readonly Competition[];
+  teams: readonly Team[];
+  players: readonly Player[];
+  rosters: readonly SeasonPlayerRoster[];
+  matches: readonly Match[];
+  events: readonly MatchEvent[];
+  appearances: readonly MatchPlayerAppearance[];
+  awards: readonly Award[];
+}>;
+
+export type FootballTable =
+  | "seasons"
+  | "competitions"
+  | "teams"
+  | "players"
+  | "season_player_rosters"
+  | "matches"
+  | "match_events"
+  | "match_player_appearances"
+  | "awards";
+export type MutationValue = string | number | boolean | null;
+export type MutationPayload = Readonly<Record<string, MutationValue>>;
+
+export const emptySnapshot: FootballSnapshot = {
+  seasons: [],
+  competitions: [],
+  teams: [],
+  players: [],
+  rosters: [],
+  matches: [],
+  events: [],
+  appearances: [],
+  awards: [],
+};
