@@ -7,13 +7,23 @@ values
   ('a0000000-0000-4000-8000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@test.local', '', now(), '{}', '{}', now(), now()),
   ('a0000000-0000-4000-8000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'user@test.local', '', now(), '{}', '{}', now(), now());
 insert into public.role_memberships (user_id, role) values ('a0000000-0000-4000-8000-000000000001', 'admin');
+insert into public.seasons (id, name, slug, status, start_date, end_date)
+values ('10000000-0000-4000-8000-000000000001', 'Public fixture', 'public-fixture', 'active', '2027-01-01', '2027-12-31');
+insert into public.drivers (id, display_name, nationality, country_code)
+values ('30000000-0000-4000-8000-000000000001', 'Public Driver', 'Testland', 'TT');
+insert into public.teams (id, name, short_name, code, country, country_code)
+values ('20000000-0000-4000-8000-000000000001', 'Public Team', 'Public', 'PUB', 'Testland', 'TT');
+insert into public.circuits (id, name, slug, country, country_code, default_laps)
+values ('40000000-0000-4000-8000-000000000001', 'Public Circuit', 'public-circuit', 'Testland', 'TT', 6);
+insert into public.grand_prix_events (id, season_id, circuit_id, name, slug, round_number, scheduled_date)
+values ('60000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', 'Public Grand Prix', 'public-grand-prix', 1, '2027-03-01');
 insert into public.seasons (id, name, slug, status, start_date, end_date) values ('11000000-0000-4000-8000-000000000001', 'Draft test', 'draft-test', 'draft', '2028-01-01', '2028-12-31');
 
 set local role anon;
 select is((select count(*) from public.seasons where id = '11000000-0000-4000-8000-000000000001'), 0::bigint, 'anon no lee borradores');
 select is((select count(*) from public.seasons where status = 'active'), 1::bigint, 'anon lee temporada activa');
-select is((select count(*) from public.drivers), 6::bigint, 'anon lee el catálogo público de pilotos');
-select is((select count(*) from public.grand_prix_calendar), 4::bigint, 'anon lee el calendario público derivado');
+select is((select count(*) from public.drivers), 1::bigint, 'anon lee el catálogo público de pilotos');
+select is((select count(*) from public.grand_prix_calendar), 1::bigint, 'anon lee el calendario público derivado');
 select throws_ok($$insert into public.drivers (display_name, nationality, country_code) values ('Anon write', 'Test', 'TT')$$, '42501', null, 'anon no puede escribir');
 select throws_ok($$select count(*) from public.audit_events$$, '42501', null, 'anon no puede leer auditoría');
 select throws_ok($$select count(*) from public.profiles$$, '42501', null, 'anon no puede leer perfiles');

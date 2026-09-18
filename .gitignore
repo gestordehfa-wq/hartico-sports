@@ -10,5 +10,6 @@ coverage/
 .env.*
 !.env.example
 
-supabase/.branches/
-supabase/.temp/
+**/supabase/.branches/
+**/supabase/.temp/
+**/.vercel/

@@ -18,8 +18,8 @@ type RacingDatabase = {
 
 export type RacingSupabaseClient = SupabaseClient<RacingDatabase>;
 
-const url = import.meta.env.VITE_SUPABASE_URL?.trim();
-const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
+const url = import.meta.env.VITE_RACING_SUPABASE_URL?.trim();
+const publishableKey = import.meta.env.VITE_RACING_SUPABASE_PUBLISHABLE_KEY?.trim();
 
 export const databaseConfigured = Boolean(url && publishableKey);
 

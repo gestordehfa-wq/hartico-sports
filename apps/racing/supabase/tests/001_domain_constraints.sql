@@ -2,6 +2,24 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(20);
 
+-- Fixtures transaccionales: el test no depende de seed.sql y puede ejecutarse
+-- sobre un proyecto Cloud recién migrado sin dejar datos ficticios.
+insert into public.seasons (id, name, slug, status, start_date, end_date)
+values ('10000000-0000-4000-8000-000000000001', 'Active fixture', 'active-fixture', 'active', '2027-01-01', '2027-12-31');
+insert into public.teams (id, name, short_name, code, country, country_code) values
+  ('20000000-0000-4000-8000-000000000001', 'Fixture Team One', 'One', 'FT1', 'Testland', 'TT'),
+  ('20000000-0000-4000-8000-000000000002', 'Fixture Team Two', 'Two', 'FT2', 'Testland', 'TT');
+insert into public.drivers (id, display_name, nationality, country_code) values
+  ('30000000-0000-4000-8000-000000000001', 'Fixture Driver One', 'Testland', 'TT'),
+  ('30000000-0000-4000-8000-000000000002', 'Fixture Driver Two', 'Testland', 'TT'),
+  ('30000000-0000-4000-8000-000000000003', 'Fixture Driver Three', 'Testland', 'TT');
+insert into public.circuits (id, name, slug, country, country_code, default_laps)
+values ('40000000-0000-4000-8000-000000000001', 'Fixture Circuit', 'fixture-circuit', 'Testland', 'TT', 6);
+insert into public.grand_prix_events (season_id, circuit_id, name, slug, round_number, scheduled_date)
+values ('10000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', 'Fixture Grand Prix', 'gp-hartico', 1, '2027-02-01');
+insert into public.season_driver_entries (season_id, driver_id, team_id, start_date, end_date)
+values ('10000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', '2027-02-01', '2027-02-28');
+
 select lives_ok($$insert into public.seasons (id, name, slug, status, start_date, end_date) values ('12000000-0000-4000-8000-000000000001', 'Test', 'test', 'draft', '2027-01-01', '2027-12-31')$$, 'acepta una temporada válida');
 select throws_ok($$insert into public.seasons (name, slug, status, start_date, end_date) values ('Bad status', 'bad-status', 'published', '2027-01-01', '2027-12-31')$$, '23514', null, 'rechaza estados de temporada fuera del vocabulario');
 select throws_ok($$insert into public.seasons (name, slug, status, start_date, end_date) values ('Bad', 'bad', 'draft', '2027-12-31', '2027-01-01')$$, '23514', null, 'rechaza fechas de temporada invertidas');

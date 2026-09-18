@@ -5,7 +5,9 @@ comparten solo infraestructura genérica. No es una conversión de HFA ni un
 monolito multideporte.
 
 Estado actual: **Racing v0.1**, **Football Lite v0.1** y **Tennis v0.1**
-implementados localmente. No existe conexión a Supabase remota ni despliegue.
+implementados localmente. La preparación Cloud v0.1 está versionada; la conexión
+remota y el despliegue requieren tres proyectos Supabase nuevos y las cuentas
+GitHub/Vercel del usuario.
 
 ## Principios
 
@@ -37,8 +39,8 @@ tooling/            Configuración común mínima; no contiene lógica de produc
 
 - Node.js 24 LTS o una versión LTS compatible con la versión instalada de Vite.
 - npm 11 o compatible.
-- Docker Desktop o Podman solo si se decide ejecutar Supabase local para Racing;
-  Football Lite no lo exige.
+- Docker Desktop o Podman son opcionales y solo se necesitan si se decide usar
+  Supabase local. El flujo Cloud documentado no depende de ellos.
 
 ## Comandos
 
@@ -68,10 +70,10 @@ npm run build
 - [Football Lite v0.1](docs/FOOTBALL_LITE_V0_1.md)
 - [Tennis v0.1](docs/TENNIS_V0_1.md)
 - [Shared UI](docs/SHARED_UI.md)
+- [Cloud deployment v0.1](docs/CLOUD_DEPLOYMENT.md)
 
 ## Alcance de esta fundación
 
-Este repositorio no contiene secretos, proyectos Supabase vinculados, datos de
-producción, despliegues ni código copiado de HFA. La próxima fase requiere una
-decisión explícita entre Racing v0.2, conexión Supabase Cloud o refinamiento
-visual.
+Este repositorio no contiene secretos, datos de producción, despliegues ni
+código copiado de HFA. Cloud v0.1 conserva tres bases y tres proyectos Vercel
+separados dentro de un único monorepo.
