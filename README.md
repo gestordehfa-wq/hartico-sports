@@ -4,8 +4,9 @@ Hartico Sports es la base para crear productos deportivos independientes que
 comparten solo infraestructura genérica. No es una conversión de HFA ni un
 monolito multideporte.
 
-Estado actual: **Racing v0.1 implementado localmente** y shells mínimos para
-Football Lite y Tennis. No existe conexión a Supabase remota ni despliegue.
+Estado actual: **Racing v0.1** y **Football Lite v0.1** implementados localmente;
+Tennis conserva su shell inicial. No existe conexión a Supabase remota ni
+despliegue.
 
 ## Principios
 
@@ -21,7 +22,7 @@ Football Lite y Tennis. No existe conexión a Supabase remota ni despliegue.
 
 ```text
 apps/
-  racing/          Primer producto; siguiente fase: Formula v0.1
+  racing/          Producto de automovilismo; v0.1 implementado
   football-lite/   Producto de fútbol deliberadamente simple y white-label
   tennis/          Producto de tenis independiente
 packages/
@@ -37,7 +38,8 @@ tooling/            Configuración común mínima; no contiene lógica de produc
 
 - Node.js 24 LTS o una versión LTS compatible con la versión instalada de Vite.
 - npm 11 o compatible.
-- Docker Desktop o Podman para ejecutar Supabase local.
+- Docker Desktop o Podman solo si se decide ejecutar Supabase local para Racing;
+  Football Lite no lo exige.
 
 ## Comandos
 
@@ -47,13 +49,14 @@ npm run supabase:racing:start
 npm run supabase:racing:reset
 npm run supabase:racing:test
 npm run dev:racing
+npm run dev:football-lite
 npm run typecheck
 npm run lint
 npm run test
 npm run build
 ```
 
-Los comandos `dev:football-lite` y `dev:tennis` levantan los otros shells.
+El comando `dev:tennis` levanta el shell del siguiente producto.
 
 ## Documentación
 
@@ -63,9 +66,10 @@ Los comandos `dev:football-lite` y `dev:tennis` levantan los otros shells.
 - [Límites de dominio](docs/DOMAIN_BOUNDARIES.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Racing / Formula v0.1](docs/RACING_V0_1.md)
+- [Football Lite v0.1](docs/FOOTBALL_LITE_V0_1.md)
 
 ## Alcance de esta fundación
 
 Este repositorio no contiene secretos, proyectos Supabase vinculados, datos de
-producción, despliegues ni código copiado de HFA. La siguiente fase comienza
-solo cuando se apruebe el alcance de Racing / Formula v0.1.
+producción, despliegues ni código copiado de HFA. La próxima fase recomendada es
+Tennis v0.1, comenzando por la aprobación de su dominio propio.

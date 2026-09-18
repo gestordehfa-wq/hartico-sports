@@ -15,12 +15,12 @@ verificable antes de ampliar alcance.
 
 Gate: `npm run typecheck` y `npm run build` pasan; repositorio limpio.
 
-## Racing / Formula v0.1 — siguiente, no iniciada
+## Racing / Formula v0.1 — completada
 
 Objetivo: primer vertical slice público y administrable con temporada, pilotos,
 escuderías, circuitos y Grandes Premios, sin clasificación avanzada ni telemetría.
 
-Entregables propuestos:
+Entregables completados:
 
 1. glosario y reglas de alcance aprobadas;
 2. modelo relacional mínimo y threat model;
@@ -32,7 +32,7 @@ Entregables propuestos:
 
 Gate: ver [RACING_V0_1.md](RACING_V0_1.md).
 
-## Racing v0.2 — Qualifying & Race
+## Racing v0.2 — pospuesta
 
 - exactamente dos intentos de clasificación por piloto;
 - mejor tiempo válido calculado y parrilla derivada;
@@ -48,22 +48,26 @@ awards.
 
 Cada incremento debe cerrar un flujo completo antes de abrir el siguiente.
 
-## Football Lite discovery
+## Football Lite v0.1 — completada
 
-Comienza después de validar los límites comunes con Racing. Primero define:
+Vertical independiente de fútbol, deliberadamente menor que HFA:
 
-- modelo de asociación y política white-label;
-- decisión de multitenancy frente a despliegue dedicado;
-- temporada, competición, equipo, jugador y plantilla mínima;
-- partido/incidencias sin importar ratings ni módulos HFA;
-- matriz RLS tenant-scoped y pruebas de aislamiento.
+- branding white-label centralizado por despliegue;
+- temporadas, competiciones, equipos, jugadores y plantillas históricas;
+- partidos, apariciones, goles, asistencias y tarjetas;
+- clasificación 3-1-0 y estadísticas básicas derivadas;
+- historial, awards y consola CRUD protegida por rol admin;
+- migraciones Supabase, RLS y auditoría preparadas para Cloud.
 
-Solo entonces se evaluará extraer administración compartida.
+No se creó un backend compartido ni se importaron módulos de HFA. La conexión
+Cloud queda como paso operativo explícito; el frontend compila y navega sin
+Docker, WSL o PostgreSQL local. Ver [FOOTBALL_LITE_V0_1.md](FOOTBALL_LITE_V0_1.md).
 
-## Tennis discovery
+## Tennis v0.1 — próxima fase recomendada
 
-Comienza con glosario y reglas: singles/doubles, formatos de sets, retiros,
-walkovers, cuadros y ranking. Su modelo no deriva de Football Lite.
+Comenzará con glosario y reglas: singles/doubles, formatos de sets, retiros,
+walkovers, cuadros y ranking. Su modelo no derivará de Football Lite. No se
+inicia Tennis hasta aprobar ese alcance.
 
 ## Capacidades transversales futuras
 
