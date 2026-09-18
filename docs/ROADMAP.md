@@ -63,11 +63,24 @@ No se creó un backend compartido ni se importaron módulos de HFA. La conexión
 Cloud queda como paso operativo explícito; el frontend compila y navega sin
 Docker, WSL o PostgreSQL local. Ver [FOOTBALL_LITE_V0_1.md](FOOTBALL_LITE_V0_1.md).
 
-## Tennis v0.1 — próxima fase recomendada
+## Tennis v0.1 — completada
 
-Comenzará con glosario y reglas: singles/doubles, formatos de sets, retiros,
-walkovers, cuadros y ranking. Su modelo no derivará de Football Lite. No se
-inicia Tennis hasta aprobar ese alcance.
+Vertical independiente de singles:
+
+- temporadas, jugadores, torneos históricos y ediciones;
+- inscripciones, seeds y cuadros single elimination de 4/8/16;
+- partidos, sets, confirmación y avance transaccional;
+- ranking estacional configurable, H2H, estadísticas, palmarés y awards;
+- frontend público, consola admin y white-label centralizado;
+- migraciones Cloud-ready, RLS, auditoría y tests SQL sin infraestructura local obligatoria.
+
+Ver [TENNIS_V0_1.md](TENNIS_V0_1.md).
+
+## Próxima decisión — pendiente
+
+No avanzar automáticamente. Evaluar Racing v0.2 (Qualifying & Race),
+conexión/configuración Supabase Cloud de los tres productos o refinamiento
+visual conjunto.
 
 ## Capacidades transversales futuras
 

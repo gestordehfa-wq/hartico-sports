@@ -4,9 +4,8 @@ Hartico Sports es la base para crear productos deportivos independientes que
 comparten solo infraestructura genérica. No es una conversión de HFA ni un
 monolito multideporte.
 
-Estado actual: **Racing v0.1** y **Football Lite v0.1** implementados localmente;
-Tennis conserva su shell inicial. No existe conexión a Supabase remota ni
-despliegue.
+Estado actual: **Racing v0.1**, **Football Lite v0.1** y **Tennis v0.1**
+implementados localmente. No existe conexión a Supabase remota ni despliegue.
 
 ## Principios
 
@@ -56,7 +55,7 @@ npm run test
 npm run build
 ```
 
-El comando `dev:tennis` levanta el shell del siguiente producto.
+`dev:tennis` levanta Tennis v0.1 y funciona también sin conexión backend.
 
 ## Documentación
 
@@ -67,9 +66,12 @@ El comando `dev:tennis` levanta el shell del siguiente producto.
 - [Roadmap](docs/ROADMAP.md)
 - [Racing / Formula v0.1](docs/RACING_V0_1.md)
 - [Football Lite v0.1](docs/FOOTBALL_LITE_V0_1.md)
+- [Tennis v0.1](docs/TENNIS_V0_1.md)
+- [Shared UI](docs/SHARED_UI.md)
 
 ## Alcance de esta fundación
 
 Este repositorio no contiene secretos, proyectos Supabase vinculados, datos de
-producción, despliegues ni código copiado de HFA. La próxima fase recomendada es
-Tennis v0.1, comenzando por la aprobación de su dominio propio.
+producción, despliegues ni código copiado de HFA. La próxima fase requiere una
+decisión explícita entre Racing v0.2, conexión Supabase Cloud o refinamiento
+visual.
