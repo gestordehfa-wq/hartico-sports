@@ -162,7 +162,7 @@ begin
 end;
 $$;
 revoke all on function tennis.protect_confirmed_games_match() from public, anon, authenticated;
-create trigger matches_protect_confirmed_games before update or delete on tennis.matches
+create trigger matches_confirmed_games_guard before update or delete on tennis.matches
 for each row execute function tennis.protect_confirmed_games_match();
 
 -- El formato de juegos no usa la tabla de sets.
