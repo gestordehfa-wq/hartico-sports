@@ -3,6 +3,9 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(21);
 
+-- Neutraliza temporalmente cualquier temporada activa preexistente (p. ej.
+-- datos de smoke testing en Cloud); se revierte con el rollback final.
+update tennis.seasons set status = 'draft' where status = 'active';
 insert into tennis.seasons(id, name, slug, status, start_date, end_date) values
 ('10000000-0000-4000-8000-000000000001', 'T1', 't1', 'active', '2030-01-01', '2030-12-31');
 select throws_ok($$insert into tennis.seasons(name, slug, status, start_date, end_date) values ('T2', 't2', 'active', '2031-01-01', '2031-12-31')$$, '23505', null, 'solo una temporada activa');
@@ -35,7 +38,7 @@ insert into tennis.matches(id, tournament_edition_id, round, round_order, match_
 ('60000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', 'semifinal', 1, 1, '20000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000002', 3);
 select throws_ok($$insert into tennis.matches(tournament_edition_id, round, round_order, match_number, player1_id, player2_id) values ('40000000-0000-4000-8000-000000000001', 'semifinal', 1, 2, '20000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001')$$, '23514', null, 'jugadores distintos');
 select throws_ok($$update tennis.matches set winner_id = '20000000-0000-4000-8000-000000000001' where id = '60000000-0000-4000-8000-000000000001'$$, '23514', null, 'ganador exige estado final');
-select throws_ok($$update tennis.matches set status = 'finished', winner_id = extensions.gen_random_uuid() where id = '60000000-0000-4000-8000-000000000001'$$, '23503', null, 'ganador debe existir');
+select throws_ok($$update tennis.matches set status = 'finished', winner_id = extensions.gen_random_uuid() where id = '60000000-0000-4000-8000-000000000001'$$, '23514', null, 'ganador debe ser participante');
 
 insert into tennis.match_sets(match_id, set_number, player1_score, player2_score) values ('60000000-0000-4000-8000-000000000001', 1, 6, 4);
 select throws_ok($$insert into tennis.match_sets(match_id, set_number, player1_score, player2_score) values ('60000000-0000-4000-8000-000000000001', 1, 6, 3)$$, '23505', null, 'set único por número');

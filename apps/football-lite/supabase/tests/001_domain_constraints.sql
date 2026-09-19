@@ -2,16 +2,19 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(12);
 
-select has_table('public', 'seasons', 'seasons existe');
-select has_table('public', 'competitions', 'competitions existe');
-select has_table('public', 'teams', 'teams existe');
-select has_table('public', 'players', 'players existe');
-select has_table('public', 'season_player_rosters', 'plantillas existe');
-select has_table('public', 'matches', 'matches existe');
-select has_table('public', 'match_events', 'eventos existe');
-select has_table('public', 'match_player_appearances', 'apariciones existe');
-select has_table('public', 'awards', 'awards existe');
+select has_table('football', 'seasons', 'seasons existe en football');
+select has_table('football', 'competitions', 'competitions existe en football');
+select has_table('football', 'teams', 'teams existe en football');
+select has_table('football', 'players', 'players existe en football');
+select has_table('football', 'season_player_rosters', 'plantillas existe en football');
+select has_table('football', 'matches', 'matches existe en football');
+select has_table('football', 'match_events', 'eventos existe en football');
+select has_table('football', 'match_player_appearances', 'apariciones existe en football');
+select has_table('football', 'awards', 'awards existe en football');
 
+-- Neutraliza temporalmente cualquier temporada activa preexistente (p. ej.
+-- datos de smoke testing en Cloud); se revierte con el rollback final.
+update football.seasons set status = 'draft' where status = 'active';
 insert into football.seasons(id, name, slug, status, start_date, end_date)
 values ('10000000-0000-4000-8000-000000000001', 'Temporada válida', 'temporada-valida', 'active', '2030-01-01', '2030-12-31');
 select throws_ok($$insert into football.seasons(name, slug, status, start_date, end_date) values ('Otra activa', 'otra-activa', 'active', '2031-01-01', '2031-12-31')$$, '23505', null, 'solo una temporada activa');

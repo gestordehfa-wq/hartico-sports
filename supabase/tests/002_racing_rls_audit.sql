@@ -8,6 +8,9 @@ values
   ('a0000000-0000-4000-8000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@test.local', '', now(), '{}', '{}', now(), now()),
   ('a0000000-0000-4000-8000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'user@test.local', '', now(), '{}', '{}', now(), now());
 insert into racing.role_memberships (user_id, role) values ('a0000000-0000-4000-8000-000000000001', 'admin');
+-- Neutraliza temporalmente cualquier temporada activa preexistente (p. ej.
+-- datos de smoke testing en Cloud); se revierte con el rollback final.
+update racing.seasons set status = 'draft' where status = 'active';
 insert into racing.seasons (id, name, slug, status, start_date, end_date)
 values ('10000000-0000-4000-8000-000000000001', 'Public fixture', 'public-fixture', 'active', '2027-01-01', '2027-12-31');
 insert into racing.drivers (id, display_name, nationality, country_code)
@@ -23,7 +26,7 @@ insert into racing.seasons (id, name, slug, status, start_date, end_date) values
 set local role anon;
 select is((select count(*) from racing.seasons where id = '11000000-0000-4000-8000-000000000001'), 0::bigint, 'anon no lee borradores');
 select is((select count(*) from racing.seasons where status = 'active'), 1::bigint, 'anon lee temporada activa');
-select is((select count(*) from racing.drivers), 1::bigint, 'anon lee el catálogo público de pilotos');
+select is((select count(*) from racing.drivers where id = '30000000-0000-4000-8000-000000000001'), 1::bigint, 'anon lee el catálogo público de pilotos');
 select is((select count(*) from racing.grand_prix_calendar), 1::bigint, 'anon lee el calendario público derivado');
 select throws_ok($$insert into racing.drivers (display_name, nationality, country_code) values ('Anon write', 'Test', 'TT')$$, '42501', null, 'anon no puede escribir');
 select throws_ok($$select count(*) from racing.audit_events$$, '42501', null, 'anon no puede leer auditoría');

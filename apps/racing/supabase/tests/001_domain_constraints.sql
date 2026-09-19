@@ -4,6 +4,9 @@ select plan(20);
 
 -- Fixtures transaccionales: el test no depende de seed.sql y puede ejecutarse
 -- sobre un proyecto Cloud recién migrado sin dejar datos ficticios.
+-- Neutraliza temporalmente cualquier temporada activa preexistente (p. ej.
+-- datos de smoke testing en Cloud); se revierte con el rollback final.
+update racing.seasons set status = 'draft' where status = 'active';
 insert into racing.seasons (id, name, slug, status, start_date, end_date)
 values ('10000000-0000-4000-8000-000000000001', 'Active fixture', 'active-fixture', 'active', '2027-01-01', '2027-12-31');
 insert into racing.teams (id, name, short_name, code, country, country_code) values

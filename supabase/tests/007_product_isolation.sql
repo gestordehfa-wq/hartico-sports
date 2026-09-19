@@ -12,6 +12,11 @@ insert into racing.role_memberships(user_id, role) values ('b0000000-0000-4000-8
 insert into football.role_memberships(user_id, role) values ('b0000000-0000-4000-8000-000000000002', 'admin');
 insert into tennis.role_memberships(user_id, role) values ('b0000000-0000-4000-8000-000000000003', 'admin');
 
+-- Neutraliza temporalmente cualquier temporada activa preexistente por producto
+-- (p. ej. datos de smoke testing en Cloud); se revierte con el rollback final.
+update racing.seasons set status = 'draft' where status = 'active';
+update football.seasons set status = 'draft' where status = 'active';
+update tennis.seasons set status = 'draft' where status = 'active';
 insert into racing.seasons(id, name, slug, status, start_date, end_date) values ('b1000000-0000-4000-8000-000000000001', 'Racing pública', 'racing-publica', 'active', '2035-01-01', '2035-12-31');
 insert into football.seasons(id, name, slug, status, start_date, end_date) values ('b2000000-0000-4000-8000-000000000001', 'Football pública', 'football-publica', 'active', '2035-01-01', '2035-12-31');
 insert into tennis.seasons(id, name, slug, status, start_date, end_date) values ('b3000000-0000-4000-8000-000000000001', 'Tennis pública', 'tennis-publica', 'active', '2035-01-01', '2035-12-31');
