@@ -1,4 +1,5 @@
 @import "@hartico/ui/classic-tokens.css";
+@import "@hartico/ui/sports-nav.css";
 
 :root {
   color: var(--classic-text);

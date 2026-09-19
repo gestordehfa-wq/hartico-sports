@@ -1,0 +1,71 @@
+/* Barra "Otros deportes": tira de herramientas Classic Windows Enterprise. Usa los tokens
+   de classic-tokens.css; cada app puede fijar --accent para el deporte actual. */
+.other-sports {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--classic-space-1) var(--classic-space-3);
+  align-items: center;
+  min-height: 30px;
+  padding: 2px max(14px, calc((100vw - 1400px) / 2));
+  border-bottom: 1px solid var(--classic-border-strong);
+  background: var(--classic-toolbar);
+  color: var(--classic-text);
+  font-family: var(--classic-font);
+  font-size: 11px;
+}
+.other-sports-label {
+  color: var(--classic-muted);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.other-sports ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--classic-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.other-sports a,
+.other-sports li > span {
+  display: inline-flex;
+  min-height: 24px;
+  gap: 6px;
+  align-items: center;
+  padding: 2px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--classic-radius);
+  color: var(--classic-text);
+  text-decoration: none;
+}
+.other-sports a:hover {
+  border-color: var(--classic-border-strong);
+  background: var(--classic-surface-alt);
+}
+.other-sports a:focus-visible {
+  outline: 2px solid var(--accent, var(--classic-border-strong));
+  outline-offset: 1px;
+}
+.other-sports li.current > span {
+  border-color: var(--classic-border-strong);
+  border-bottom: 3px solid var(--accent, var(--classic-text));
+  background: var(--classic-surface);
+  font-weight: 700;
+}
+.other-sports small {
+  color: var(--classic-muted);
+  font-size: 9px;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .other-sports {
+    padding: 4px 10px;
+  }
+  .other-sports a,
+  .other-sports li > span {
+    min-height: 32px;
+  }
+}

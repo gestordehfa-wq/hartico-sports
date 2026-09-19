@@ -1,3 +1,13 @@
+export type SportId = "racing" | "football" | "tennis";
+export type SportSite = Readonly<{ id: SportId; label: string; href: string }>;
+
+/** Directorio de sitios para la navegación compartida; no contiene reglas deportivas. */
+export const sportSites: readonly SportSite[] = [
+  { id: "racing", label: "Racing", href: "https://racing.hfa.bar" },
+  { id: "football", label: "Football", href: "https://football.hfa.bar" },
+  { id: "tennis", label: "Tennis", href: "https://tennis.hfa.bar" },
+];
+
 export type ProductStage = "foundation" | "development" | "production";
 
 export type ProductTheme = Readonly<{

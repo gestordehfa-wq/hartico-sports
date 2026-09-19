@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./styles.css": "./src/styles.css",
-    "./classic-tokens.css": "./src/classic-tokens.css"
+    "./classic-tokens.css": "./src/classic-tokens.css",
+    "./sports-nav.css": "./src/sports-nav.css"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

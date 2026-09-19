@@ -1,3 +1,4 @@
+import { OtherSports } from "@hartico/ui";
 import { isRouteErrorResponse, NavLink, Outlet, useRouteError } from "react-router-dom";
 import { useRacing } from "./racing-context";
 
@@ -9,6 +10,7 @@ const navigation = [
 export function AppLayout() {
   const { configured, error, session } = useRacing();
   return <div className="racing-app">
+    <OtherSports current="racing" />
     <header className="site-header">
       <NavLink to="/" className="brand" aria-label="Hartico Racing, inicio"><span className="brand-mark" aria-hidden="true">HR</span><span>Hartico <strong>Racing</strong></span></NavLink>
       <nav aria-label="Navegación principal" className="main-nav">{navigation.map(([to, label]) => <NavLink key={to} to={to} end={to === "/"}>{label}</NavLink>)}</nav>

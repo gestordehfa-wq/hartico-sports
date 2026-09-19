@@ -1,3 +1,4 @@
+import { OtherSports } from "@hartico/ui";
 import { isRouteErrorResponse, NavLink, Outlet, useRouteError } from "react-router-dom";
 import { association, associationTheme } from "../config/association";
 import { useTennis } from "./tennis-context";
@@ -16,6 +17,7 @@ export function AppLayout() {
   const { configured, error, session } = useTennis();
   return (
     <div className="tennis-app" style={associationTheme}>
+      <OtherSports current="tennis" />
       <header className="site-header">
         <NavLink to="/" className="brand" aria-label={`${association.name}, inicio`}>
           {association.logoUrl ? (
