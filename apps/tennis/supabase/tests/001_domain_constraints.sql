@@ -18,7 +18,7 @@ select throws_ok($$insert into tennis.players(display_name, nationality, country
 insert into tennis.tournaments(id, name, short_name, default_surface, category) values
 ('30000000-0000-4000-8000-000000000001', 'Open', 'OP', 'clay', 'major');
 select throws_ok($$insert into tennis.tournaments(name, short_name, default_surface, category) values ('Mal Open', 'MO', 'carpet', 'major')$$, '23514', null, 'superficie limitada');
-select throws_ok($$insert into tennis.tournaments(name, short_name, default_surface, category) values ('Otro', 'O', 'hard', 'atp500')$$, '23514', null, 'categoría propia limitada');
+select throws_ok($$insert into tennis.tournaments(name, short_name, default_surface, category) values ('Otro', 'O', 'hard', 'atp500')$$, '23503', null, 'categoría debe existir en el catálogo configurable');
 
 insert into tennis.tournament_editions(id, tournament_id, season_id, surface, start_date, end_date, status, draw_size, best_of) values
 ('40000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000001', 'clay', '2030-03-01', '2030-03-05', 'registration', 4, 3);

@@ -5,6 +5,7 @@ import {
   AdminResourcePage,
   LoginPage,
 } from "../features/admin/admin-pages";
+import { AdminScoringPage } from "../features/admin/scoring-page";
 import {
   DrawsPage,
   HeadToHeadPage,
@@ -45,6 +46,7 @@ const router = createBrowserRouter([
       { path: "login", element: <LoginPage /> },
       { path: "admin", element: <AdminHome /> },
       { path: "admin/draw", element: <AdminDrawPage /> },
+      { path: "admin/scoring", element: <AdminScoringPage /> },
       { path: "admin/:resource", element: <AdminResourcePage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],

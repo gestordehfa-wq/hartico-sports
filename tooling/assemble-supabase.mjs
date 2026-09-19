@@ -22,6 +22,7 @@ const migrations = [
   ["apps/tennis/supabase/migrations/002_competition.sql", "20260918020200_tennis_002_competition.sql"],
   ["apps/tennis/supabase/migrations/003_draw_results.sql", "20260918020300_tennis_003_draw_results.sql"],
   ["apps/tennis/supabase/migrations/004_audit.sql", "20260918020400_tennis_004_audit.sql"],
+  ["apps/tennis/supabase/migrations/005_games_scoring_ranking.sql", "20260919020500_tennis_005_games_scoring_ranking.sql"],
 ];
 
 const tests = [
@@ -32,6 +33,7 @@ const tests = [
   ["apps/football-lite/supabase/tests/002_rls_audit.sql", "004_football_rls_audit.sql"],
   ["apps/tennis/supabase/tests/001_domain_constraints.sql", "005_tennis_domain_constraints.sql"],
   ["apps/tennis/supabase/tests/002_rls_audit.sql", "006_tennis_rls_audit.sql"],
+  ["apps/tennis/supabase/tests/003_games_scoring_ranking.sql", "009_tennis_v02_games_ranking.sql"],
 ];
 
 const generatedHeader = (source) =>

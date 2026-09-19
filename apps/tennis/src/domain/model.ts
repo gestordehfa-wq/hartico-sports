@@ -8,8 +8,14 @@ export const surfaces = ["hard", "clay", "grass", "indoor", "custom"] as const;
 export type Surface = (typeof surfaces)[number];
 export const tournamentStatuses = ["active", "inactive", "archived"] as const;
 export type TournamentStatus = (typeof tournamentStatuses)[number];
-export const tournamentCategories = ["major", "masters", "standard", "finals", "custom"] as const;
-export type TournamentCategory = (typeof tournamentCategories)[number];
+/** Código de categoría del catálogo configurable `tournament_categories`. */
+export type TournamentCategory = string;
+export const scoringFormats = ["sets", "games"] as const;
+export type ScoringFormat = (typeof scoringFormats)[number];
+export const gamesBestOfValues = [5, 7] as const;
+export type GamesBestOf = (typeof gamesBestOfValues)[number];
+export const gamePointValues = [0, 15, 30, 40, 45] as const;
+export type GamePoints = (typeof gamePointValues)[number];
 export const editionStatuses = [
   "draft",
   "registration",
@@ -28,6 +34,9 @@ export const entryStatuses = [
 export type EntryStatus = (typeof entryStatuses)[number];
 export const rounds = ["round_of_16", "quarterfinal", "semifinal", "final"] as const;
 export type TournamentRound = (typeof rounds)[number];
+/** Ronda alcanzada para el ranking; `champion` gana la final y `final` la pierde. */
+export const rankingReaches = ["champion", "final", "semifinal", "quarterfinal", "round_of_16"] as const;
+export type RankingReach = (typeof rankingReaches)[number];
 export const matchStatuses = [
   "scheduled",
   "in_progress",
@@ -83,7 +92,10 @@ export type TournamentEdition = Timestamps &
     end_date: string;
     status: EditionStatus;
     draw_size: number;
+    /** Legado v0.1: mejor de N sets; solo aplica con scoring_format = "sets". */
     best_of: number;
+    scoring_format: ScoringFormat;
+    games_best_of: GamesBestOf | null;
   }>;
 export type TournamentEntry = Readonly<{
   id: string;
@@ -108,6 +120,12 @@ export type Match = Timestamps &
     next_match_id: string | null;
     next_slot: 1 | 2 | null;
     best_of: number;
+    scoring_format: ScoringFormat;
+    games_best_of: GamesBestOf | null;
+    player1_games: number;
+    player2_games: number;
+    player1_points: GamePoints;
+    player2_points: GamePoints;
   }>;
 export type MatchSet = Timestamps &
   Readonly<{
@@ -117,13 +135,10 @@ export type MatchSet = Timestamps &
     player1_score: number;
     player2_score: number;
   }>;
-export type TournamentPointRule = Timestamps &
-  Readonly<{
-    id: string;
-    category: TournamentCategory;
-    round: TournamentRound;
-    points: number;
-  }>;
+export type TournamentCategoryRecord = Timestamps &
+  Readonly<{ id: string; code: TournamentCategory; name: string; sort_order: number }>;
+export type RankingPointRule = Timestamps &
+  Readonly<{ id: string; category: TournamentCategory; reached: RankingReach; points: number }>;
 export type Award = Readonly<{
   id: string;
   season_id: string;
@@ -143,7 +158,8 @@ export type TennisSnapshot = Readonly<{
   entries: readonly TournamentEntry[];
   matches: readonly Match[];
   sets: readonly MatchSet[];
-  pointRules: readonly TournamentPointRule[];
+  categories: readonly TournamentCategoryRecord[];
+  rankingRules: readonly RankingPointRule[];
   awards: readonly Award[];
 }>;
 
@@ -155,7 +171,8 @@ export type TennisTable =
   | "tournament_entries"
   | "matches"
   | "match_sets"
-  | "tournament_point_rules"
+  | "tournament_categories"
+  | "ranking_point_rules"
   | "awards";
 export type MutationValue = string | number | boolean | null;
 export type MutationPayload = Readonly<Record<string, MutationValue>>;
@@ -168,7 +185,8 @@ export const emptySnapshot: TennisSnapshot = {
   entries: [],
   matches: [],
   sets: [],
-  pointRules: [],
+  categories: [],
+  rankingRules: [],
   awards: [],
 };
 
@@ -178,6 +196,13 @@ export const surfaceLabels: Readonly<Record<Surface, string>> = {
   grass: "Césped",
   indoor: "Indoor",
   custom: "Personalizada",
+};
+export const reachLabels: Readonly<Record<RankingReach, string>> = {
+  champion: "Campeón",
+  final: "Finalista",
+  semifinal: "Semifinalista",
+  quarterfinal: "Cuartofinalista",
+  round_of_16: "Octavos",
 };
 export const roundLabels: Readonly<Record<TournamentRound, string>> = {
   round_of_16: "Octavos",

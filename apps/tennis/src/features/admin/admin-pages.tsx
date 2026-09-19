@@ -8,10 +8,11 @@ import {
   handednessValues,
   matchStatuses,
   playerStatuses,
+  rankingReaches,
   rounds,
+  scoringFormats,
   seasonStatuses,
   surfaces,
-  tournamentCategories,
   tournamentStatuses,
   type MutationPayload,
   type TennisSnapshot,
@@ -32,6 +33,8 @@ type Field = Readonly<{
   max?: number;
   step?: number;
   valueType?: "number";
+  /** Con valor vacío no se envía la columna (conserva el default de la base de datos). */
+  omitEmpty?: boolean;
   options?: (snapshot: TennisSnapshot) => readonly Option[];
 }>;
 type Row = Readonly<Record<string, string | number | null>> & Readonly<{ id: string }>;
@@ -45,9 +48,13 @@ type ResourceConfig = Readonly<{
 const fixed = (items: readonly string[]) => () => items.map((value) => ({ value, label: value }));
 const named = (items: readonly { id: string; name: string }[]) =>
   items.map(({ id, name }) => ({ value: id, label: name }));
+const categoryOptions = (snapshot: TennisSnapshot) =>
+  [...snapshot.categories]
+    .sort((a, b) => a.sort_order - b.sort_order || a.code.localeCompare(b.code))
+    .map(({ code, name }) => ({ value: code, label: `${name} (${code})` }));
 const players = (snapshot: TennisSnapshot) =>
   snapshot.players.map(({ id, display_name }) => ({ value: id, label: display_name }));
-const editions = (snapshot: TennisSnapshot) =>
+export const editions = (snapshot: TennisSnapshot) =>
   snapshot.editions.map((item) => ({
     value: item.id,
     label:
@@ -129,7 +136,7 @@ const resources: Readonly<Record<string, ResourceConfig>> = {
         label: "Categoría",
         type: "select",
         required: true,
-        options: fixed(tournamentCategories),
+        options: categoryOptions,
       },
       {
         name: "status",
@@ -144,7 +151,17 @@ const resources: Readonly<Record<string, ResourceConfig>> = {
   editions: {
     title: "Ediciones",
     table: "tournament_editions",
-    columns: ["name", "tournament_id", "season_id", "surface", "status", "draw_size", "best_of"],
+    columns: [
+      "name",
+      "tournament_id",
+      "season_id",
+      "surface",
+      "status",
+      "draw_size",
+      "scoring_format",
+      "games_best_of",
+      "best_of",
+    ],
     fields: [
       {
         name: "tournament_id",
@@ -186,10 +203,25 @@ const resources: Readonly<Record<string, ResourceConfig>> = {
         options: fixed(["4", "8", "16"]),
       },
       {
-        name: "best_of",
-        label: "Mejor de",
+        name: "scoring_format",
+        label: "Formato de marcador",
         type: "select",
         required: true,
+        options: fixed(scoringFormats),
+      },
+      {
+        name: "games_best_of",
+        label: "Mejor de (juegos, 5 o 7; solo formato games)",
+        type: "select",
+        nullable: true,
+        valueType: "number",
+        options: fixed(["5", "7"]),
+      },
+      {
+        name: "best_of",
+        label: "Mejor de (sets, legado v0.1; solo formato sets)",
+        type: "select",
+        omitEmpty: true,
         valueType: "number",
         options: fixed(["1", "3", "5"]),
       },
@@ -239,6 +271,11 @@ const resources: Readonly<Record<string, ResourceConfig>> = {
       "player2_id",
       "status",
       "winner_id",
+      "scoring_format",
+      "player1_games",
+      "player2_games",
+      "player1_points",
+      "player2_points",
     ],
     fields: [
       {
@@ -382,19 +419,43 @@ const resources: Readonly<Record<string, ResourceConfig>> = {
     ],
     rows: (snapshot) => snapshot.awards.map(cleanRow),
   },
+  categories: {
+    title: "Categorías de torneo",
+    table: "tournament_categories",
+    columns: ["code", "name", "sort_order"],
+    fields: [
+      { name: "code", label: "Código (minúsculas, guion bajo)", type: "text", required: true },
+      { name: "name", label: "Nombre", type: "text", required: true },
+      {
+        name: "sort_order",
+        label: "Orden",
+        type: "number",
+        required: true,
+        min: 0,
+        valueType: "number",
+      },
+    ],
+    rows: (snapshot) => snapshot.categories.map(cleanRow),
+  },
   "ranking-rules": {
-    title: "Reglas de puntos",
-    table: "tournament_point_rules",
-    columns: ["category", "round", "points"],
+    title: "Puntos de ranking",
+    table: "ranking_point_rules",
+    columns: ["category", "reached", "points"],
     fields: [
       {
         name: "category",
         label: "Categoría",
         type: "select",
         required: true,
-        options: fixed(tournamentCategories),
+        options: categoryOptions,
       },
-      { name: "round", label: "Resultado", type: "select", required: true, options: fixed(rounds) },
+      {
+        name: "reached",
+        label: "Ronda alcanzada",
+        type: "select",
+        required: true,
+        options: fixed(rankingReaches),
+      },
       {
         name: "points",
         label: "Puntos",
@@ -404,15 +465,16 @@ const resources: Readonly<Record<string, ResourceConfig>> = {
         valueType: "number",
       },
     ],
-    rows: (snapshot) => snapshot.pointRules.map(cleanRow),
+    rows: (snapshot) => snapshot.rankingRules.map(cleanRow),
   },
 };
 const adminLinks = [
   ...Object.entries(resources).map(([path, config]) => ({ path, title: config.title })),
   { path: "draw", title: "Generar cuadro" },
+  { path: "scoring", title: "Marcador en juegos" },
 ];
 
-function AdminGate({ children }: Readonly<{ children: ReactNode }>) {
+export function AdminGate({ children }: Readonly<{ children: ReactNode }>) {
   const { configured, session, isAdmin, adminChecked } = useTennis();
   if (!configured)
     return (
@@ -513,7 +575,9 @@ export function AdminHome() {
             <span>
               {path === "draw"
                 ? "Preview y confirmación"
-                : `${resources[path]?.rows(snapshot).length ?? 0} registros`}
+                : path === "scoring"
+                  ? "Puntos, juegos y resultado directo"
+                  : `${resources[path]?.rows(snapshot).length ?? 0} registros`}
             </span>
           </Link>
         ))}
@@ -526,6 +590,7 @@ function payloadFrom(form: HTMLFormElement, fields: readonly Field[]): MutationP
   const payload: Record<string, string | number | null> = {};
   for (const field of fields) {
     const raw = String(data.get(field.name) ?? "").trim();
+    if (!raw && field.omitEmpty) continue;
     if (!raw && field.nullable) payload[field.name] = null;
     else if (field.valueType === "number" || field.type === "number")
       payload[field.name] = Number(raw);
@@ -770,8 +835,11 @@ export function AdminDrawPage() {
     if (!repository || !edition || validation || existing.length) return;
     try {
       await repository.generateDraw(edition.id);
+      // El cuadro es público solo con la edición activa (RLS de lectura pública).
+      if (edition.status !== "active")
+        await repository.update("tournament_editions", edition.id, { status: "active" });
       await refresh();
-      setMessage("Cuadro generado correctamente.");
+      setMessage("Cuadro generado y edición activada.");
       setPreviewed(false);
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : "No fue posible generar el cuadro.");

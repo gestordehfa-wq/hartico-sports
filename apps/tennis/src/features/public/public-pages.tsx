@@ -1,20 +1,24 @@
 import { DataGrid, type DataGridColumn } from "@hartico/ui";
+import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useTennis } from "../../app/tennis-context";
 import { association } from "../../config/association";
 import type { Match, TennisSnapshot, TournamentEdition } from "../../domain/model";
-import { roundLabels, surfaceLabels } from "../../domain/model";
+import { formatGameScore } from "../../domain/games";
+import { rankingReaches, reachLabels, roundLabels, surfaceLabels } from "../../domain/model";
 import {
-  activeSeason,
-  headToHead,
-  orderedRounds,
-  playerStats,
+  pointsFor,
+  rankingHistory,
+  rankingWithMovement,
+  rollingRanking,
   seasonRanking,
   type RankingRow,
-} from "../../domain/rules";
+} from "../../domain/ranking";
+import { activeSeason, headToHead, orderedRounds, playerStats } from "../../domain/rules";
 import {
   EmptyState,
   formatDate,
+  GamesScore,
   LoadingPanel,
   MetricStrip,
   PageHeader,
@@ -38,6 +42,17 @@ function activeEdition(snapshot: TennisSnapshot): TournamentEdition | undefined 
     .filter(({ status }) => status === "active")
     .sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
 }
+function sideScore(match: Match, snapshot: TennisSnapshot, side: 1 | 2): number | "" {
+  if (match.scoring_format === "games")
+    return match.status === "scheduled" ? "" : side === 1 ? match.player1_games : match.player2_games;
+  return (
+    snapshot.sets
+      .filter(({ match_id }) => match_id === match.id)
+      .filter((set) =>
+        side === 1 ? set.player1_score > set.player2_score : set.player2_score > set.player1_score,
+      ).length || ""
+  );
+}
 function MatchLine({ match, snapshot }: Readonly<{ match: Match; snapshot: TennisSnapshot }>) {
   return (
     <Link className="match-row" to={`/matches/${match.id}`}>
@@ -49,6 +64,16 @@ function MatchLine({ match, snapshot }: Readonly<{ match: Match; snapshot: Tenni
       <span>
         <PlayerName player={playerFor(snapshot, match.player2_id)} />
       </span>
+      {match.scoring_format === "games" && match.status !== "scheduled" && (
+        <span>
+          {formatGameScore({
+            games1: match.player1_games,
+            games2: match.player2_games,
+            points1: match.status === "in_progress" ? match.player1_points : 0,
+            points2: match.status === "in_progress" ? match.player2_points : 0,
+          })}
+        </span>
+      )}
       <StatusBadge status={match.status} />
     </Link>
   );
@@ -74,7 +99,7 @@ export function HomePage() {
   if (loading) return <LoadingPanel />;
   const season = activeSeason(snapshot.seasons);
   const edition = activeEdition(snapshot);
-  const ranking = season ? seasonRanking(snapshot, season.id).slice(0, 5) : [];
+  const ranking = rollingRanking(snapshot).slice(0, 5);
   const upcoming = snapshot.matches
     .filter(({ status }) => status === "scheduled")
     .sort((a, b) => (a.scheduled_at ?? "9999").localeCompare(b.scheduled_at ?? "9999"))
@@ -301,19 +326,11 @@ function Bracket({
                 <Link className="bracket-match" to={`/matches/${match.id}`} key={match.id}>
                   <span className={match.winner_id === match.player1_id ? "winner" : ""}>
                     <PlayerName player={playerFor(snapshot, match.player1_id)} />
-                    <i>
-                      {snapshot.sets
-                        .filter(({ match_id }) => match_id === match.id)
-                        .filter((set) => set.player1_score > set.player2_score).length || ""}
-                    </i>
+                    <i>{sideScore(match, snapshot, 1)}</i>
                   </span>
                   <span className={match.winner_id === match.player2_id ? "winner" : ""}>
                     <PlayerName player={playerFor(snapshot, match.player2_id)} />
-                    <i>
-                      {snapshot.sets
-                        .filter(({ match_id }) => match_id === match.id)
-                        .filter((set) => set.player2_score > set.player1_score).length || ""}
-                    </i>
+                    <i>{sideScore(match, snapshot, 2)}</i>
                   </span>
                   <StatusBadge status={match.status} />
                 </Link>
@@ -367,7 +384,7 @@ export function PlayerDetailPage() {
   const player = snapshot.players.find((item) => item.id === id);
   if (!player) return <EmptyState>El jugador no existe o no está publicado.</EmptyState>;
   const season = activeSeason(snapshot.seasons);
-  const ranking = season ? seasonRanking(snapshot, season.id) : [];
+  const ranking = rollingRanking(snapshot);
   const position = ranking.findIndex((row) => row.player.id === player.id);
   const stats = playerStats(snapshot, player.id, season?.id);
   const titles = snapshot.matches
@@ -521,7 +538,11 @@ export function MatchDetailPage() {
             <span>{roundLabels[match.round]}</span> <StatusBadge status={match.status} />
           </>
         }
-        status={`Mejor de ${match.best_of}`}
+        status={
+          match.scoring_format === "games"
+            ? `Mejor de ${match.games_best_of} juegos · 0-15-30-40-45`
+            : `Mejor de ${match.best_of}`
+        }
       >
         <div className="match-detail">
           <div className="match-detail-player">
@@ -534,7 +555,9 @@ export function MatchDetailPage() {
             <PlayerName player={playerFor(snapshot, match.player2_id)} />
           </div>
         </div>
-        {sets.length ? (
+        {match.scoring_format === "games" ? (
+          <GamesScore match={match} snapshot={snapshot} />
+        ) : sets.length ? (
           <SetScore match={match} sets={sets} snapshot={snapshot} />
         ) : (
           <EmptyState>El resultado aún no tiene sets registrados.</EmptyState>
@@ -544,34 +567,123 @@ export function MatchDetailPage() {
   );
 }
 
+function movementLabel(row: RankingRow, comparedTo: string | null): string {
+  if (comparedTo === null) return "—";
+  if (row.previousRank === null || row.previousRank === undefined) return "Nuevo";
+  const change = row.previousRank - row.rank;
+  return change > 0 ? `▲ ${change}` : change < 0 ? `▼ ${-change}` : "=";
+}
 export function RankingPage() {
   const { snapshot, loading } = useTennis();
+  const [selected, setSelected] = useState("");
   if (loading) return <LoadingPanel />;
-  const season =
-    activeSeason(snapshot.seasons) ?? snapshot.seasons.find(({ status }) => status === "completed");
-  const rows = season ? seasonRanking(snapshot, season.id) : [];
+  const { rows, comparedTo } = rankingWithMovement(snapshot);
+  const season = activeSeason(snapshot.seasons);
+  const seasonRows = season ? seasonRanking(snapshot, season.id) : [];
+  const focusId = selected || rows[0]?.player.id || "";
+  const history = focusId ? rankingHistory(snapshot, focusId) : [];
+  const categories = [...snapshot.categories].sort(
+    (a, b) => a.sort_order - b.sort_order || a.code.localeCompare(b.code),
+  );
   const columns: readonly DataGridColumn<RankingRow>[] = [
-    { key: "position", label: "Pos.", render: (row) => rows.indexOf(row) + 1 },
+    { key: "position", label: "Pos.", render: (row) => row.rank },
+    { key: "movement", label: "Mov.", render: (row) => movementLabel(row, comparedTo) },
     { key: "player", label: "Jugador", render: (row) => <PlayerName player={row.player} /> },
     { key: "points", label: "Puntos", render: (row) => <strong>{row.points}</strong> },
     { key: "played", label: "Torneos", render: (row) => row.tournamentsPlayed },
     { key: "titles", label: "Títulos", render: (row) => row.titles },
+    { key: "finals", label: "Finales", render: (row) => row.finals },
   ];
   return (
     <>
       <PageHeader
-        eyebrow={season?.name ?? "Temporada"}
+        eyebrow="Últimas 52 semanas"
         title="Ranking"
-        copy="Puntos derivados de resultados y reglas configurables por categoría."
+        copy="Puntos por categoría de torneo y ronda alcanzada, acumulados de las ediciones completadas en las últimas 52 semanas."
       />
-      <WindowPanel title="Ranking de temporada" status={`${rows.length} jugadores`}>
+      <WindowPanel
+        title="Ranking general"
+        status={
+          comparedTo
+            ? `${rows.length} jugadores · movimiento respecto al ${formatDate(comparedTo)}`
+            : `${rows.length} jugadores · sin torneos previos para comparar`
+        }
+      >
         <DataGrid
           rows={rows}
           columns={columns}
           rowKey={(row) => row.player.id}
-          empty="No existen resultados puntuables."
+          empty="No existen resultados puntuables en las últimas 52 semanas."
         />
       </WindowPanel>
+      <WindowPanel title="Evolución de posición" status="Ranking a la fecha de cada edición completada">
+        {rows.length ? (
+          <div className="toolbar">
+            <label htmlFor="ranking-player">Jugador</label>
+            <select
+              id="ranking-player"
+              value={focusId}
+              onChange={(event) => setSelected(event.currentTarget.value)}
+            >
+              {rows.map((row) => (
+                <option key={row.player.id} value={row.player.id}>
+                  {row.player.display_name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+        <DataGrid
+          rows={history}
+          rowKey={(entry) => entry.editionId}
+          empty="Aún no hay ediciones completadas para este jugador."
+          columns={[
+            { key: "date", label: "Cierre", render: (entry) => formatDate(entry.date) },
+            {
+              key: "edition",
+              label: "Torneo",
+              render: (entry) => {
+                const edition = snapshot.editions.find(({ id }) => id === entry.editionId);
+                return edition ? tournamentName(snapshot, edition) : "—";
+              },
+            },
+            {
+              key: "reached",
+              label: "Ronda alcanzada",
+              render: (entry) => (entry.reached ? reachLabels[entry.reached] : "Participó"),
+            },
+            { key: "rank", label: "Posición", render: (entry) => entry.rank ?? "—" },
+            { key: "points", label: "Puntos", render: (entry) => entry.points },
+          ]}
+        />
+      </WindowPanel>
+      <WindowPanel title="Puntos por categoría" status="Configurables por la administración">
+        <DataGrid
+          rows={categories}
+          rowKey={(category) => category.id}
+          empty="No hay categorías configuradas."
+          columns={[
+            { key: "category", label: "Categoría", render: (category) => category.name },
+            ...rankingReaches.map(
+              (reached): DataGridColumn<(typeof categories)[number]> => ({
+                key: reached,
+                label: reachLabels[reached],
+                render: (category) => pointsFor(snapshot.rankingRules, category.code, reached),
+              }),
+            ),
+          ]}
+        />
+      </WindowPanel>
+      {season && (
+        <WindowPanel title={`Ranking de ${season.name}`} status={`${seasonRows.length} jugadores`}>
+          <DataGrid
+            rows={seasonRows}
+            columns={columns.filter(({ key }) => key !== "movement")}
+            rowKey={(row) => row.player.id}
+            empty="No existen resultados puntuables en la temporada."
+          />
+        </WindowPanel>
+      )}
     </>
   );
 }

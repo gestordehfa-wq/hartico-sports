@@ -1,5 +1,7 @@
 import type {
   Award,
+  GamePoints,
+  GamesBestOf,
   Match,
   MatchSet,
   MutationPayload,
@@ -9,9 +11,11 @@ import type {
   TennisTable,
   Tournament,
   TournamentEdition,
+  TournamentCategoryRecord,
   TournamentEntry,
-  TournamentPointRule,
+  RankingPointRule,
 } from "../domain/model";
+import { gamePointValues, gamesBestOfValues, rankingReaches, scoringFormats } from "../domain/model";
 import type { TennisSupabaseClient } from "./supabase";
 
 export interface TennisRepository {
@@ -21,7 +25,15 @@ export interface TennisRepository {
   remove(table: TennisTable, id: string): Promise<void>;
   confirmResult(matchId: string): Promise<void>;
   generateDraw(editionId: string): Promise<void>;
+  recordPoint(matchId: string, scorer: 1 | 2): Promise<void>;
+  setScore(matchId: string, score: MatchScoreInput, confirm: boolean): Promise<void>;
 }
+export type MatchScoreInput = Readonly<{
+  games1: number;
+  games2: number;
+  points1: number;
+  points2: number;
+}>;
 function record(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value))
     throw new Error("El backend devolvió una fila inválida.");
@@ -57,6 +69,19 @@ function oneOf<const T extends readonly string[]>(
   const value = text(row, key);
   const found = values.find((item) => item === value);
   if (!found) throw new Error(`Valor inválido para ${key}: ${value}.`);
+  return found;
+}
+function gamesBestOf(row: Record<string, unknown>): GamesBestOf | null {
+  const value = optionalNumber(row, "games_best_of");
+  if (value === null) return null;
+  const found = gamesBestOfValues.find((item) => item === value);
+  if (!found) throw new Error(`Valor inválido para games_best_of: ${value}.`);
+  return found;
+}
+function gamePoints(row: Record<string, unknown>, key: string): GamePoints {
+  const value = number(row, key);
+  const found = gamePointValues.find((item) => item === value);
+  if (found === undefined) throw new Error(`Valor inválido para ${key}: ${value}.`);
   return found;
 }
 const timestamps = (row: Record<string, unknown>) => ({
@@ -98,7 +123,7 @@ const parseTournament = (value: unknown): Tournament => {
     short_name: text(row, "short_name"),
     logo_url: optionalText(row, "logo_url"),
     default_surface: oneOf(row, "default_surface", ["hard", "clay", "grass", "indoor", "custom"]),
-    category: oneOf(row, "category", ["major", "masters", "standard", "finals", "custom"]),
+    category: text(row, "category"),
     status: oneOf(row, "status", ["active", "inactive", "archived"]),
     ...timestamps(row),
   };
@@ -116,6 +141,8 @@ const parseEdition = (value: unknown): TournamentEdition => {
     status: oneOf(row, "status", ["draft", "registration", "active", "completed", "cancelled"]),
     draw_size: number(row, "draw_size"),
     best_of: number(row, "best_of"),
+    scoring_format: oneOf(row, "scoring_format", scoringFormats),
+    games_best_of: gamesBestOf(row),
     ...timestamps(row),
   };
 };
@@ -161,6 +188,12 @@ const parseMatch = (value: unknown): Match => {
     next_match_id: optionalText(row, "next_match_id"),
     next_slot: nextSlot,
     best_of: number(row, "best_of"),
+    scoring_format: oneOf(row, "scoring_format", scoringFormats),
+    games_best_of: gamesBestOf(row),
+    player1_games: number(row, "player1_games"),
+    player2_games: number(row, "player2_games"),
+    player1_points: gamePoints(row, "player1_points"),
+    player2_points: gamePoints(row, "player2_points"),
     ...timestamps(row),
   };
 };
@@ -175,12 +208,22 @@ const parseSet = (value: unknown): MatchSet => {
     ...timestamps(row),
   };
 };
-const parseRule = (value: unknown): TournamentPointRule => {
+const parseCategory = (value: unknown): TournamentCategoryRecord => {
   const row = record(value);
   return {
     id: text(row, "id"),
-    category: oneOf(row, "category", ["major", "masters", "standard", "finals", "custom"]),
-    round: oneOf(row, "round", ["round_of_16", "quarterfinal", "semifinal", "final"]),
+    code: text(row, "code"),
+    name: text(row, "name"),
+    sort_order: number(row, "sort_order"),
+    ...timestamps(row),
+  };
+};
+const parseRankingRule = (value: unknown): RankingPointRule => {
+  const row = record(value);
+  return {
+    id: text(row, "id"),
+    category: text(row, "category"),
+    reached: oneOf(row, "reached", rankingReaches),
     points: number(row, "points"),
     ...timestamps(row),
   };
@@ -212,7 +255,8 @@ const tables = [
   "tournament_entries",
   "matches",
   "match_sets",
-  "tournament_point_rules",
+  "tournament_categories",
+  "ranking_point_rules",
   "awards",
 ] as const;
 export class SupabaseTennisRepository implements TennisRepository {
@@ -233,8 +277,9 @@ export class SupabaseTennisRepository implements TennisRepository {
       entries: (results[4] ?? []).map(parseEntry),
       matches: (results[5] ?? []).map(parseMatch),
       sets: (results[6] ?? []).map(parseSet),
-      pointRules: (results[7] ?? []).map(parseRule),
-      awards: (results[8] ?? []).map(parseAward),
+      categories: (results[7] ?? []).map(parseCategory),
+      rankingRules: (results[8] ?? []).map(parseRankingRule),
+      awards: (results[9] ?? []).map(parseAward),
     };
   }
   async create(table: TennisTable, payload: MutationPayload): Promise<void> {
@@ -251,6 +296,24 @@ export class SupabaseTennisRepository implements TennisRepository {
   }
   async confirmResult(matchId: string): Promise<void> {
     const { error } = await this.client.rpc("confirm_match_result", { target_match_id: matchId });
+    if (error) throw error;
+  }
+  async recordPoint(matchId: string, scorer: 1 | 2): Promise<void> {
+    const { error } = await this.client.rpc("record_match_point", {
+      target_match_id: matchId,
+      scorer_slot: scorer,
+    });
+    if (error) throw error;
+  }
+  async setScore(matchId: string, score: MatchScoreInput, confirm: boolean): Promise<void> {
+    const { error } = await this.client.rpc("set_match_score", {
+      target_match_id: matchId,
+      p1_games: score.games1,
+      p2_games: score.games2,
+      p1_points: score.points1,
+      p2_points: score.points2,
+      confirm_result: confirm,
+    });
     if (error) throw error;
   }
   async generateDraw(editionId: string): Promise<void> {

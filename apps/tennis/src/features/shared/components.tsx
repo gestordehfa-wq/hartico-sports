@@ -69,6 +69,34 @@ export function SetScore({
     </div>
   );
 }
+/** Marcador del formato de juegos: juegos ganados y, en directo, puntos del juego actual. */
+export function GamesScore({
+  match,
+  snapshot,
+}: Readonly<{ match: Match; snapshot: TennisSnapshot }>) {
+  const row = (side: 1 | 2) => {
+    const player = playerFor(snapshot, side === 1 ? match.player1_id : match.player2_id);
+    const games = side === 1 ? match.player1_games : match.player2_games;
+    const points = side === 1 ? match.player1_points : match.player2_points;
+    return (
+      <div className={`score-row ${player && match.winner_id === player.id ? "winner" : ""}`}>
+        <PlayerName player={player} />
+        <strong>{games}</strong>
+        {match.status === "in_progress" && (
+          <em className="game-points" title="Puntos del juego actual">
+            {points}
+          </em>
+        )}
+      </div>
+    );
+  };
+  return (
+    <div className="set-score">
+      {row(1)}
+      {row(2)}
+    </div>
+  );
+}
 export function MetricStrip({
   items,
 }: Readonly<{ items: readonly Readonly<{ label: string; value: ReactNode }>[] }>) {

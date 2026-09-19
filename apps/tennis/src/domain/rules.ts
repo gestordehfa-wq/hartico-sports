@@ -1,12 +1,9 @@
 import type {
   Match,
   MatchSet,
-  Player,
   Season,
   TennisSnapshot,
-  TournamentCategory,
   TournamentEntry,
-  TournamentPointRule,
   TournamentRound,
 } from "./model";
 
@@ -19,13 +16,6 @@ export type DrawMatchDraft = Readonly<{
   player2Id: string | null;
   nextMatchKey: string | null;
   nextSlot: 1 | 2 | null;
-}>;
-export type RankingRow = Readonly<{
-  player: Player;
-  points: number;
-  tournamentsPlayed: number;
-  titles: number;
-  finals: number;
 }>;
 export type PlayerStats = Readonly<{
   played: number;
@@ -250,73 +240,6 @@ export function playerStats(
     setsWon,
     setsLost,
   };
-}
-
-function pointsFor(
-  rules: readonly TournamentPointRule[],
-  category: TournamentCategory,
-  round: TournamentRound,
-): number {
-  return rules.find((rule) => rule.category === category && rule.round === round)?.points ?? 0;
-}
-
-export function seasonRanking(snapshot: TennisSnapshot, seasonId: string): readonly RankingRow[] {
-  return snapshot.players
-    .map((player) => {
-      let points = 0;
-      let tournamentsPlayed = 0;
-      let titles = 0;
-      let finals = 0;
-      for (const edition of snapshot.editions.filter(
-        (item) => item.season_id === seasonId && item.status === "completed",
-      )) {
-        const entry = snapshot.entries.find(
-          (item) => item.tournament_edition_id === edition.id && item.player_id === player.id,
-        );
-        if (!entry || entry.entry_status === "withdrawn") continue;
-        tournamentsPlayed += 1;
-        const tournament = snapshot.tournaments.find(({ id }) => id === edition.tournament_id);
-        if (!tournament) continue;
-        const playerMatches = snapshot.matches.filter(
-          (match) =>
-            match.tournament_edition_id === edition.id &&
-            (match.player1_id === player.id || match.player2_id === player.id),
-        );
-        const final = playerMatches.find(({ round }) => round === "final");
-        if (final?.winner_id === player.id) {
-          titles += 1;
-          finals += 1;
-          points += pointsFor(snapshot.pointRules, tournament.category, "final");
-          continue;
-        }
-        if (final) {
-          finals += 1;
-          points += pointsFor(snapshot.pointRules, tournament.category, "semifinal");
-          continue;
-        }
-        const loss = playerMatches
-          .filter((match) => match.winner_id && match.winner_id !== player.id)
-          .sort((a, b) => b.round_order - a.round_order)[0];
-        if (loss) {
-          const previousRound: Readonly<Record<TournamentRound, TournamentRound>> = {
-            final: "semifinal",
-            semifinal: "quarterfinal",
-            quarterfinal: "round_of_16",
-            round_of_16: "round_of_16",
-          };
-          points += pointsFor(snapshot.pointRules, tournament.category, previousRound[loss.round]);
-        }
-      }
-      return { player, points, tournamentsPlayed, titles, finals };
-    })
-    .filter((row) => row.tournamentsPlayed > 0 || row.points > 0)
-    .sort(
-      (a, b) =>
-        b.points - a.points ||
-        b.titles - a.titles ||
-        b.finals - a.finals ||
-        a.player.display_name.localeCompare(b.player.display_name),
-    );
 }
 
 export function orderedRounds(matches: readonly Match[]): readonly TournamentRound[] {

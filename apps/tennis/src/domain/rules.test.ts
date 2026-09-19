@@ -5,7 +5,6 @@ import {
   generateDraw,
   headToHead,
   playerStats,
-  seasonRanking,
   validateEntries,
   validateMatchResult,
 } from "./rules";
@@ -44,6 +43,12 @@ const match = (overrides: Partial<Match> = {}): Match => ({
   next_match_id: "m2",
   next_slot: 1,
   best_of: 3,
+  scoring_format: "sets",
+  games_best_of: null,
+  player1_games: 0,
+  player2_games: 0,
+  player1_points: 0,
+  player2_points: 0,
   ...stamp,
   ...overrides,
 });
@@ -153,6 +158,8 @@ const snapshot: TennisSnapshot = {
       status: "completed",
       draw_size: 4,
       best_of: 3,
+      scoring_format: "sets",
+      games_best_of: null,
       ...stamp,
     },
   ],
@@ -169,32 +176,11 @@ const snapshot: TennisSnapshot = {
     }),
   ],
   sets: [set(1, 6, 4), set(2, 6, 3)].map((item) => ({ ...item, match_id: "final" })),
-  pointRules: [
-    { id: "r1", category: "major", round: "final", points: 1000, ...stamp },
-    { id: "r2", category: "major", round: "semifinal", points: 600, ...stamp },
-  ],
+  categories: [],
+  rankingRules: [],
   awards: [],
 };
 
-describe("ranking", () => {
-  it("calcula puntos y desempata por títulos", () => {
-    const ranking = seasonRanking(snapshot, "season");
-    expect(ranking.map(({ player: item, points }) => [item.id, points])).toEqual([
-      ["a", 1000],
-      ["b", 600],
-    ]);
-    expect(ranking[0]).toMatchObject({ titles: 1, tournamentsPlayed: 1 });
-
-    const tiedOnPoints = seasonRanking(
-      {
-        ...snapshot,
-        pointRules: snapshot.pointRules.map((rule) => ({ ...rule, points: 600 })),
-      },
-      "season",
-    );
-    expect(tiedOnPoints.map(({ player: item }) => item.id)).toEqual(["a", "b"]);
-  });
-});
 describe("head-to-head y estadísticas", () => {
   it("cuenta enfrentamientos, sets, victorias, derrotas y títulos", () => {
     expect(headToHead(snapshot, "a", "b")).toEqual({
