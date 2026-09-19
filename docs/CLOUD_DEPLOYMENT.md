@@ -1,12 +1,13 @@
 # Cloud deployment
 
-Estado: **PARTIAL**. Proyecto `hartico-sports` (ref `hzxqgyxmunoqrsakqtje`)
-vinculado y migrado; las 16 migraciones iniciales están aplicadas en Cloud;
-las 7 suites SQL (158 assertions) pasan contra Cloud; las tres apps leen datos
-reales de Cloud en las rutas documentadas. Pendiente: verificación de login y
-CRUD vía UI con las identidades Auth ya existentes (bloqueada en esta sesión
-por no disponer de las credenciales ni poder revelar el `service_role` para
-resetearlas; ver "Estado de verificación Cloud" más abajo).
+Estado: **READY**. Proyecto `hartico-sports` (ref `hzxqgyxmunoqrsakqtje`)
+vinculado y migrado; 16 migraciones aplicadas en Cloud; 7 suites SQL (158
+assertions) en verde; login, reconocimiento de `/admin` y CRUD con
+persistencia tras refresh verificados en las tres apps con el usuario admin
+definitivo (`a1ddef20-7e97-431e-8a1f-88805e39736f`, con membership admin en
+`racing`, `football` y `tennis`). Datos `Cloud Smoke` de prueba eliminados de
+los tres dominios; `audit_events` intacto. Ver "Estado de verificación Cloud"
+más abajo para el detalle.
 
 ## Topología aprobada
 
@@ -181,13 +182,11 @@ Correcciones aplicadas a los tests (no a migraciones publicadas):
   (no destructiva) en esta sesión.
 - Identidad normal (`auth-normal-*@hartico-sports.dev`) con 0 memberships
   admin en los tres productos. Verificado igual.
-- **Pendiente**: login real vía UI en las tres apps. No se dispone de la
-  contraseña de ninguna identidad en esta sesión (no quedó persistida, como
-  corresponde), y el intento de resetearla vía Management API (`supabase
-  projects api-keys --reveal` para obtener `service_role`) fue bloqueado por
-  el clasificador de seguridad del entorno (materialización de credenciales).
-  Requiere que un humano aporte la contraseña o la resetee manualmente desde
-  el Dashboard.
+- Identidad admin definitiva (`a1ddef20-7e97-431e-8a1f-88805e39736f`), creada
+  y con contraseña gestionada por el usuario, con membership `admin` explícita
+  en `racing.role_memberships`, `football.role_memberships` y
+  `tennis.role_memberships`. Login real verificado en las tres apps (ver
+  Frontend Cloud).
 
 ### RLS y auditoría
 
@@ -215,20 +214,19 @@ solo HTTP 200 del `index.html`):
 `/admin` sin sesión muestra el gate de autenticación (mismo contenido que
 `/login`), comportamiento esperado.
 
-**Pendiente**: login real y CRUD vía UI (bloqueado por el mismo motivo que
-Auth arriba). CRUD administrativo (insert/update/delete con auditoría) ya está
-verificado a nivel de datos/RLS por las suites SQL.
+Login real, reconocimiento de `/admin` y una operación CRUD (editar un
+registro existente, con persistencia confirmada tras refresh completo de
+página) verificados en las tres apps con la identidad admin definitiva, vía
+Playwright + Microsoft Edge headless (sin Docker/WSL).
 
 ### Datos `Cloud Smoke`
 
-Inventario confirmado (prefijo `mu7ewizx0je8r`) en los tres productos: una
+Inventario original (prefijo `mu7ewizx0je8r`) en los tres productos: una
 temporada, más entidades mínimas por dominio (piloto/equipo/circuito/GP en
 Racing; competición/equipos/jugadores/partido en Football; torneo/edición/4
-jugadores en Tennis). **No se eliminaron** en esta sesión: son la única
-evidencia visual actual de que el frontend lee Cloud correctamente, y la
-verificación de CRUD/login vía UI sigue pendiente. Se recomienda limpiarlos
-después de cerrar esa verificación, respetando el orden referencial y
-preservando `audit_events`.
+jugadores en Tennis). **Eliminados** en esta sesión, en orden referencial
+(hijos antes que padres), tras cerrar la verificación de login/CRUD.
+`audit_events` no fue tocado.
 
 ### Quality gates
 
