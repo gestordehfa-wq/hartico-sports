@@ -3,7 +3,7 @@ import type { MutationValue, RacingTable } from "../domain/model";
 
 type RacingDatabase = {
   racing: {
-    Tables: Record<RacingTable, {
+    Tables: Record<RacingTable | "grand_prix_result_confirmations", {
       Row: Record<string, unknown>;
       Insert: Record<string, MutationValue>;
       Update: Record<string, MutationValue>;
@@ -12,6 +12,8 @@ type RacingDatabase = {
     Views: Record<string, never>;
     Functions: {
       current_user_is_admin: { Args: Record<string, never>; Returns: boolean };
+      confirm_grand_prix_results: { Args: { p_grand_prix_id: string }; Returns: undefined };
+      reopen_grand_prix_results: { Args: { p_grand_prix_id: string; p_reason: string }; Returns: undefined };
     };
   };
 };

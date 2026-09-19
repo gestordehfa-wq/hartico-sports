@@ -683,6 +683,44 @@ tbody tr:hover {
   box-shadow: 0 14px 45px #17231d4f;
 }
 
+.flow-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  list-style: none;
+}
+.flow-steps li {
+  padding: 6px 12px;
+  border-right: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+}
+.flow-steps li::before {
+  margin-right: 6px;
+  content: "○";
+}
+.flow-steps li.done {
+  color: var(--text);
+  font-weight: 700;
+}
+.flow-steps li.done::before {
+  color: var(--success);
+  content: "●";
+}
+.data-window ul {
+  margin: 0 0 10px;
+  padding-left: 20px;
+  color: var(--danger);
+}
+.form-grid input[type="checkbox"] {
+  width: 18px;
+  min-height: 18px;
+}
+
 @media (max-width: 900px) {
   .site-header {
     grid-template-columns: auto 1fr;

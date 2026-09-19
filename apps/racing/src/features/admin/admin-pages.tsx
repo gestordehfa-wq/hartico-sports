@@ -2,22 +2,28 @@ import { type FormEvent, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useRacing } from "../../app/racing-context";
 import {
-  circuitStatuses, driverStatuses, entryRoles, entryStatuses, grandPrixStatuses,
-  seasonStatuses, teamStatuses, type MutationPayload, type RacingSnapshot, type RacingTable,
+  attemptStatuses, circuitStatuses, driverStatuses, entryRoles, entryStatuses, grandPrixStatuses,
+  raceResultStatuses, seasonStatuses, teamStatuses, type MutationPayload, type RacingSnapshot, type RacingTable,
 } from "../../domain/model";
+import { formatLapTime } from "../../domain/results";
 
-type FieldType = "text" | "number" | "date" | "url" | "color" | "select";
+type FieldType = "text" | "number" | "date" | "url" | "color" | "select" | "checkbox";
 type Option = Readonly<{ value: string; label: string }>;
 type Field = Readonly<{ name: string; label: string; type: FieldType; required?: boolean; nullable?: boolean; min?: number; max?: number; step?: number; options?: (snapshot: RacingSnapshot) => readonly Option[] }>;
-type Row = Readonly<Record<string, string | number | null>> & Readonly<{ id: string }>;
-type ResourceConfig = Readonly<{ title: string; table: RacingTable; fields: readonly Field[]; columns: readonly string[]; rows(snapshot: RacingSnapshot): readonly Row[] }>;
+type CellValue = string | number | boolean | null;
+type Row = Readonly<Record<string, CellValue>> & Readonly<{ id: string }>;
+type ResourceConfig = Readonly<{ title: string; table: RacingTable; fields: readonly Field[]; columns: readonly string[]; times?: readonly string[]; rows(snapshot: RacingSnapshot): readonly Row[] }>;
 
 const fixedOptions = (items: readonly string[]) => () => items.map((value) => ({ value, label: value }));
 const entityOptions = (items: readonly { id: string; name: string }[]) => items.map(({ id, name }) => ({ value: id, label: name }));
 const driverOptions = (snapshot: RacingSnapshot) => snapshot.drivers.map(({ id, display_name }) => ({ value: id, label: display_name }));
+const grandPrixOptions = (snapshot: RacingSnapshot) => [...snapshot.grandPrix]
+  .sort((left, right) => left.season_id.localeCompare(right.season_id) || left.round_number - right.round_number)
+  .map(({ id, name, round_number, season_id }) => ({ value: id, label: `${snapshot.seasons.find((season) => season.id === season_id)?.name ?? "—"} · R${round_number} · ${name}` }));
+const teamOptions = (snapshot: RacingSnapshot) => entityOptions(snapshot.teams);
 const cleanRow = (value: object): Row => {
-  const result: Record<string, string | number | null> = {};
-  for (const [key, item] of Object.entries(value)) if (typeof item === "string" || typeof item === "number" || item === null) result[key] = item;
+  const result: Record<string, CellValue> = {};
+  for (const [key, item] of Object.entries(value)) if (typeof item === "string" || typeof item === "number" || typeof item === "boolean" || item === null) result[key] = item;
   if (typeof result.id !== "string") throw new Error("Fila administrativa sin identificador.");
   return result as Row;
 };
@@ -58,11 +64,29 @@ const resources: Readonly<Record<string, ResourceConfig>> = {
     { name: "scheduled_date", label: "Fecha", type: "date", required: true }, { name: "race_laps", label: "Vueltas (override)", type: "number", nullable: true, min: 4, max: 8 },
     { name: "status", label: "Estado", type: "select", required: true, options: fixedOptions(grandPrixStatuses) },
   ], rows: (s) => s.grandPrix.map(cleanRow) },
+  "points-scale": { title: "Escala de puntos", table: "points_scale", columns: ["season_id", "race_position", "points"], fields: [
+    { name: "season_id", label: "Temporada", type: "select", required: true, options: (s) => entityOptions(s.seasons) }, { name: "race_position", label: "Posición final", type: "number", required: true, min: 1, max: 50 },
+    { name: "points", label: "Puntos", type: "number", required: true, min: 0, step: 0.01 },
+  ], rows: (s) => s.pointsScale.map(cleanRow) },
+  qualifying: { title: "Clasificación", table: "qualifying_results", columns: ["grand_prix_id", "driver_id", "team_id", "attempt_1_status", "attempt_1_ms", "attempt_2_status", "attempt_2_ms", "best_time_ms"], times: ["attempt_1_ms", "attempt_2_ms", "best_time_ms"], fields: [
+    { name: "grand_prix_id", label: "Gran Premio", type: "select", required: true, options: grandPrixOptions }, { name: "driver_id", label: "Piloto", type: "select", required: true, options: driverOptions },
+    { name: "team_id", label: "Escudería representada", type: "select", required: true, options: teamOptions },
+    { name: "attempt_1_status", label: "Intento 1", type: "select", required: true, options: fixedOptions(attemptStatuses) }, { name: "attempt_1_ms", label: "Tiempo intento 1 (ms)", type: "number", nullable: true, min: 1, max: 3600000 },
+    { name: "attempt_2_status", label: "Intento 2", type: "select", required: true, options: fixedOptions(attemptStatuses) }, { name: "attempt_2_ms", label: "Tiempo intento 2 (ms)", type: "number", nullable: true, min: 1, max: 3600000 },
+  ], rows: (s) => s.qualifying.map(cleanRow) },
+  "race-results": { title: "Resultados de carrera", table: "race_results", columns: ["grand_prix_id", "driver_id", "team_id", "grid_position", "status", "final_position", "laps_completed", "total_time_ms", "pit_stop_completed", "pit_stop_lap", "points"], times: ["total_time_ms"], fields: [
+    { name: "grand_prix_id", label: "Gran Premio", type: "select", required: true, options: grandPrixOptions }, { name: "driver_id", label: "Piloto", type: "select", required: true, options: driverOptions },
+    { name: "team_id", label: "Escudería representada", type: "select", required: true, options: teamOptions }, { name: "grid_position", label: "Posición de salida", type: "number", nullable: true, min: 1, max: 99 },
+    { name: "status", label: "Estado", type: "select", required: true, options: fixedOptions(raceResultStatuses) }, { name: "final_position", label: "Posición final (solo finished)", type: "number", nullable: true, min: 1, max: 99 },
+    { name: "laps_completed", label: "Vueltas completadas", type: "number", required: true, min: 0, max: 8 }, { name: "total_time_ms", label: "Tiempo final (ms, solo finished)", type: "number", nullable: true, min: 1 },
+    { name: "pit_stop_completed", label: "Parada obligatoria cumplida", type: "checkbox" }, { name: "pit_stop_lap", label: "Vuelta de parada", type: "number", nullable: true, min: 1, max: 8 },
+    { name: "pit_resolution_note", label: "Resolución administrativa del incumplimiento de pits", type: "text", nullable: true },
+  ], rows: (s) => s.raceResults.map(cleanRow) },
 };
 
 const adminLinks = Object.entries(resources).map(([path, config]) => ({ path, title: config.title }));
 
-function AdminGate({ children }: Readonly<{ children: React.ReactNode }>) {
+export function AdminGate({ children }: Readonly<{ children: React.ReactNode }>) {
   const { configured, session, isAdmin, adminChecked } = useRacing();
   if (!configured) return <section className="window"><header className="title-bar">Administración no disponible</header><div className="window-body"><p>Configura Supabase local con <code>.env.example</code>.</p></div></section>;
   if (!session) return <Navigate to="/login" replace />;
@@ -80,12 +104,22 @@ export function LoginPage() {
 
 export function AdminHome() {
   const { snapshot, signOut } = useRacing();
-  return <AdminGate><header className="page-header"><p className="eyebrow">Consola</p><h1>Administración Racing</h1><p>Catálogos y calendario protegidos por autorización en base de datos.</p></header><div className="admin-toolbar"><span>Sesión administrativa activa</span><button type="button" className="button" onClick={() => void signOut()}>Cerrar sesión</button></div><div className="admin-grid">{adminLinks.map(({ path, title }) => <Link className="admin-module" to={`/admin/${path}`} key={path}><strong>{title}</strong><span>{resources[path]?.rows(snapshot).length ?? 0} registros</span></Link>)}</div></AdminGate>;
+  return <AdminGate><header className="page-header"><p className="eyebrow">Consola</p><h1>Administración Racing</h1><p>Catálogos y calendario protegidos por autorización en base de datos.</p></header><div className="admin-toolbar"><span>Sesión administrativa activa</span><button type="button" className="button" onClick={() => void signOut()}>Cerrar sesión</button></div><div className="admin-grid"><Link className="admin-module" to="/admin/race-control"><strong>Control de carrera</strong><span>Parrilla, pits y confirmación</span></Link>{adminLinks.map(({ path, title }) => <Link className="admin-module" to={`/admin/${path}`} key={path}><strong>{title}</strong><span>{resources[path]?.rows(snapshot).length ?? 0} registros</span></Link>)}</div></AdminGate>;
+}
+
+function displayCell(config: ResourceConfig, snapshot: RacingSnapshot, row: Row, column: string): string {
+  const value = row[column] ?? null;
+  if (value === null) return "—";
+  if (typeof value === "boolean") return value ? "Sí" : "No";
+  if (config.times?.includes(column) && typeof value === "number") return `${formatLapTime(value)} (${value} ms)`;
+  const field = config.fields.find(({ name }) => name === column);
+  if (field?.type === "select") return field.options?.(snapshot).find((option) => option.value === String(value))?.label ?? String(value);
+  return String(value);
 }
 
 function payloadFrom(form: HTMLFormElement, fields: readonly Field[]): MutationPayload {
-  const data = new FormData(form); const payload: Record<string, string | number | null> = {};
-  for (const field of fields) { const raw = String(data.get(field.name) ?? "").trim(); if (!raw && field.nullable) payload[field.name] = null; else if (field.type === "number") payload[field.name] = Number(raw); else payload[field.name] = raw; }
+  const data = new FormData(form); const payload: Record<string, string | number | boolean | null> = {};
+  for (const field of fields) { if (field.type === "checkbox") { payload[field.name] = data.get(field.name) === "on"; continue; } const raw = String(data.get(field.name) ?? "").trim(); if (!raw && field.nullable) payload[field.name] = null; else if (field.type === "number") payload[field.name] = Number(raw); else payload[field.name] = raw; }
   return payload;
 }
 
@@ -97,8 +131,8 @@ export function AdminResourcePage() {
   async function save(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!repository) return; setBusy(true); setMessage(null); try { const payload = payloadFrom(event.currentTarget, selectedConfig.fields); if (editing) await repository.update(selectedConfig.table, editing.id, payload); else await repository.create(selectedConfig.table, payload); await refresh(); setEditing(null); event.currentTarget.reset(); setMessage("Cambios guardados correctamente."); } catch (cause) { setMessage(cause instanceof Error ? cause.message : "No fue posible guardar."); } finally { setBusy(false); } }
   async function remove() { if (!repository || !pendingDelete) return; setBusy(true); try { await repository.remove(selectedConfig.table, pendingDelete.id); await refresh(); setPendingDelete(null); setEditing(null); setMessage("Registro eliminado."); } catch (cause) { setMessage(cause instanceof Error ? cause.message : "No fue posible eliminar."); } finally { setBusy(false); } }
   return <AdminGate><div className="admin-toolbar"><Link to="/admin">← Consola</Link><span>{rows.length} registros</span></div><header className="page-header"><p className="eyebrow">Administración</p><h1>{config.title}</h1><p>Crear, editar y eliminar registros. Las relaciones protegidas pueden impedir eliminaciones.</p></header>
-    <section className="window"><header className="title-bar">{editing ? `Editar ${editing.id}` : "Nuevo registro"}</header><form key={editing?.id ?? "new"} className="window-body form-grid" onSubmit={save}>{config.fields.map((field) => <label htmlFor={`field-${field.name}`} key={field.name}>{field.label}{field.type === "select" ? <select id={`field-${field.name}`} name={field.name} required={field.required} defaultValue={String(editing?.[field.name] ?? "")}><option value="">Seleccionar…</option>{field.options?.(snapshot).map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select> : <input id={`field-${field.name}`} name={field.name} type={field.type} required={field.required} min={field.min} max={field.max} step={field.step} defaultValue={String(editing?.[field.name] ?? "")} />}</label>)}<div className="dialog-actions">{editing && <button type="button" className="button" onClick={() => setEditing(null)}>Cancelar</button>}<button type="submit" className="button primary" disabled={busy}>{busy ? "Guardando…" : editing ? "Guardar cambios" : "Crear"}</button></div>{message && <p className="form-message" role="status">{message}</p>}</form></section>
-    <section className="window data-window"><header className="title-bar">Listado de {config.title.toLowerCase()}</header><div className="table-scroll"><table><thead><tr>{config.columns.map((column) => <th key={column}>{column.replaceAll("_", " ")}</th>)}<th>Acciones</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}>{config.columns.map((column) => <td key={column}>{String(row[column] ?? "—")}</td>)}<td className="row-actions"><button type="button" onClick={() => setEditing(row)}>Editar</button><button type="button" className="danger" onClick={() => setPendingDelete(row)}>Eliminar</button></td></tr>)}</tbody></table>{!rows.length && <div className="table-empty">No hay registros.</div>}</div><footer className="status-bar">{rows.length} elementos</footer></section>
+    <section className="window"><header className="title-bar">{editing ? `Editar ${editing.id}` : "Nuevo registro"}</header><form key={editing?.id ?? "new"} className="window-body form-grid" onSubmit={save}>{config.fields.map((field) => <label htmlFor={`field-${field.name}`} key={field.name}>{field.label}{field.type === "select" ? <select id={`field-${field.name}`} name={field.name} required={field.required} defaultValue={String(editing?.[field.name] ?? "")}><option value="">Seleccionar…</option>{field.options?.(snapshot).map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select> : field.type === "checkbox" ? <input id={`field-${field.name}`} name={field.name} type="checkbox" defaultChecked={editing?.[field.name] === true} /> : <input id={`field-${field.name}`} name={field.name} type={field.type} required={field.required} min={field.min} max={field.max} step={field.step} defaultValue={String(editing?.[field.name] ?? "")} />}</label>)}<div className="dialog-actions">{editing && <button type="button" className="button" onClick={() => setEditing(null)}>Cancelar</button>}<button type="submit" className="button primary" disabled={busy}>{busy ? "Guardando…" : editing ? "Guardar cambios" : "Crear"}</button></div>{message && <p className="form-message" role="status">{message}</p>}</form></section>
+    <section className="window data-window"><header className="title-bar">Listado de {config.title.toLowerCase()}</header><div className="table-scroll"><table><thead><tr>{config.columns.map((column) => <th key={column}>{column.replaceAll("_", " ")}</th>)}<th>Acciones</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}>{config.columns.map((column) => <td key={column}>{displayCell(selectedConfig, snapshot, row, column)}</td>)}<td className="row-actions"><button type="button" onClick={() => setEditing(row)}>Editar</button><button type="button" className="danger" onClick={() => setPendingDelete(row)}>Eliminar</button></td></tr>)}</tbody></table>{!rows.length && <div className="table-empty">No hay registros.</div>}</div><footer className="status-bar">{rows.length} elementos</footer></section>
     {pendingDelete && <div className="dialog-backdrop"><div className="window confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title"><header className="title-bar" id="confirm-title">Confirmar eliminación</header><div className="window-body"><p>¿Eliminar el registro <code>{pendingDelete.id}</code>? Esta acción puede ser rechazada si existen referencias históricas.</p><div className="dialog-actions"><button type="button" className="button" onClick={() => setPendingDelete(null)}>Cancelar</button><button type="button" className="button danger" disabled={busy} onClick={() => void remove()}>Eliminar</button></div></div></div></div>}
   </AdminGate>;
 }

@@ -11,7 +11,7 @@ const Loader = () => <div className="loading" role="status">Cargando campeonato�
 const circuitFor = (snapshot: RacingSnapshot, event: GrandPrixEvent): Circuit | undefined => snapshot.circuits.find(({ id }) => id === event.circuit_id);
 
 function GrandPrixCard({ event, circuit, featured = false }: Readonly<{ event: GrandPrixEvent; circuit: Circuit | undefined; featured?: boolean }>) {
-  return <article className={featured ? "gp-card featured" : "gp-card"}><div className="round">Ronda <strong>{String(event.round_number).padStart(2, "0")}</strong></div><div><span className={`status ${event.status}`}>{event.status}</span><h3>{event.name}</h3><p>{circuit?.name ?? "Circuito pendiente"} · {circuit?.country ?? "País pendiente"} · {event.race_laps ?? circuit?.default_laps ?? "—"} vueltas</p></div><time dateTime={event.scheduled_date}>{formatDate(event.scheduled_date)}</time></article>;
+  return <article className={featured ? "gp-card featured" : "gp-card"}><div className="round">Ronda <strong>{String(event.round_number).padStart(2, "0")}</strong></div><div><span className={`status ${event.status}`}>{event.status}</span><h3><Link to={`/grand-prix/${event.id}`}>{event.name}</Link></h3><p>{circuit?.name ?? "Circuito pendiente"} · {circuit?.country ?? "País pendiente"} · {event.race_laps ?? circuit?.default_laps ?? "—"} vueltas</p></div><time dateTime={event.scheduled_date}>{formatDate(event.scheduled_date)}</time></article>;
 }
 
 export function HomePage() {

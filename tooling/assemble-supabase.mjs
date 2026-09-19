@@ -12,6 +12,7 @@ const migrations = [
   ["apps/racing/supabase/migrations/005_circuits_grand_prix.sql", "20260918000500_racing_005_circuits_grand_prix.sql"],
   ["apps/racing/supabase/migrations/006_rbac_rls.sql", "20260918000600_racing_006_rbac_rls.sql"],
   ["apps/racing/supabase/migrations/007_audit.sql", "20260918000700_racing_007_audit.sql"],
+  ["apps/racing/supabase/migrations/008_qualifying_race_results.sql", "20260919000800_racing_008_qualifying_race_results.sql"],
   ["apps/football-lite/supabase/migrations/001_identity_seasons.sql", "20260918010100_football_001_identity_seasons.sql"],
   ["apps/football-lite/supabase/migrations/002_competition_people.sql", "20260918010200_football_002_competition_people.sql"],
   ["apps/football-lite/supabase/migrations/003_matches_events.sql", "20260918010300_football_003_matches_events.sql"],
@@ -26,6 +27,7 @@ const migrations = [
 const tests = [
   ["apps/racing/supabase/tests/001_domain_constraints.sql", "001_racing_domain_constraints.sql"],
   ["apps/racing/supabase/tests/002_rls_audit.sql", "002_racing_rls_audit.sql"],
+  ["apps/racing/supabase/tests/003_qualifying_race_results.sql", "008_racing_v02_results.sql"],
   ["apps/football-lite/supabase/tests/001_domain_constraints.sql", "003_football_domain_constraints.sql"],
   ["apps/football-lite/supabase/tests/002_rls_audit.sql", "004_football_rls_audit.sql"],
   ["apps/tennis/supabase/tests/001_domain_constraints.sql", "005_tennis_domain_constraints.sql"],

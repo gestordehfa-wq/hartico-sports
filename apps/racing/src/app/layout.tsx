@@ -3,7 +3,7 @@ import { useRacing } from "./racing-context";
 
 const navigation = [
   ["/", "Inicio"], ["/season", "Temporada"], ["/drivers", "Pilotos"],
-  ["/teams", "Escuderías"], ["/calendar", "Calendario"], ["/circuits", "Circuitos"],
+  ["/teams", "Escuderías"], ["/calendar", "Calendario"], ["/championship", "Campeonato"], ["/circuits", "Circuitos"],
 ] as const;
 
 export function AppLayout() {
@@ -17,7 +17,7 @@ export function AppLayout() {
     {!configured && <div className="system-banner" role="status">Backend local no configurado. Consulta <code>.env.example</code> para conectarlo.</div>}
     {error && <div className="system-banner error" role="alert">{error}</div>}
     <main className="site-main"><Outlet /></main>
-    <footer className="site-footer"><span>Hartico Racing</span><span>Campeonato independiente · v0.1</span></footer>
+    <footer className="site-footer"><span>Hartico Racing</span><span>Campeonato independiente · v0.2</span></footer>
   </div>;
 }
 

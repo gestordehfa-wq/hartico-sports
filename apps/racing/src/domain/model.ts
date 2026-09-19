@@ -23,6 +23,12 @@ export const grandPrixStatuses = [
 ] as const;
 export type GrandPrixStatus = (typeof grandPrixStatuses)[number];
 
+export const attemptStatuses = ["valid", "invalid", "not_recorded"] as const;
+export type AttemptStatus = (typeof attemptStatuses)[number];
+
+export const raceResultStatuses = ["finished", "dnf", "dns", "dsq"] as const;
+export type RaceResultStatus = (typeof raceResultStatuses)[number];
+
 type Timestamps = Readonly<{ created_at: string; updated_at: string }>;
 
 export type Season = Timestamps &
@@ -105,6 +111,45 @@ export type GrandPrixEvent = Timestamps &
     status: GrandPrixStatus;
   }>;
 
+export type PointsScaleEntry = Timestamps &
+  Readonly<{ id: string; season_id: string; race_position: number; points: number }>;
+
+export type QualifyingResult = Timestamps &
+  Readonly<{
+    id: string;
+    grand_prix_id: string;
+    driver_id: string;
+    team_id: string;
+    attempt_1_status: AttemptStatus;
+    attempt_1_ms: number | null;
+    attempt_2_status: AttemptStatus;
+    attempt_2_ms: number | null;
+    best_time_ms: number | null;
+  }>;
+
+export type RaceResult = Timestamps &
+  Readonly<{
+    id: string;
+    grand_prix_id: string;
+    driver_id: string;
+    team_id: string;
+    grid_position: number | null;
+    status: RaceResultStatus;
+    final_position: number | null;
+    laps_completed: number;
+    total_time_ms: number | null;
+    pit_stop_completed: boolean;
+    pit_stop_lap: number | null;
+    pit_resolution_note: string | null;
+    points: number | null;
+  }>;
+
+export type ResultConfirmation = Readonly<{
+  id: string;
+  grand_prix_id: string;
+  confirmed_at: string;
+}>;
+
 export type RacingSnapshot = Readonly<{
   seasons: readonly Season[];
   drivers: readonly Driver[];
@@ -112,6 +157,10 @@ export type RacingSnapshot = Readonly<{
   entries: readonly SeasonDriverEntry[];
   circuits: readonly Circuit[];
   grandPrix: readonly GrandPrixEvent[];
+  pointsScale: readonly PointsScaleEntry[];
+  qualifying: readonly QualifyingResult[];
+  raceResults: readonly RaceResult[];
+  confirmations: readonly ResultConfirmation[];
 }>;
 
 export type RacingTable =
@@ -120,9 +169,12 @@ export type RacingTable =
   | "teams"
   | "season_driver_entries"
   | "circuits"
-  | "grand_prix_events";
+  | "grand_prix_events"
+  | "points_scale"
+  | "qualifying_results"
+  | "race_results";
 
-export type MutationValue = string | number | null;
+export type MutationValue = string | number | boolean | null;
 export type MutationPayload = Readonly<Record<string, MutationValue>>;
 
 export const emptySnapshot: RacingSnapshot = {
@@ -132,4 +184,8 @@ export const emptySnapshot: RacingSnapshot = {
   entries: [],
   circuits: [],
   grandPrix: [],
+  pointsScale: [],
+  qualifying: [],
+  raceResults: [],
+  confirmations: [],
 };
