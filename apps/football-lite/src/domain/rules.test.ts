@@ -26,6 +26,10 @@ const competition: Competition = {
   type: "league",
   status: "active",
   logo_url: null,
+  legs: 1,
+  champion_team_id: null,
+  source_league_id: null,
+  source_cup_id: null,
   ...timestamps,
 };
 const team = (id: string, name: string): Team => ({
@@ -62,6 +66,13 @@ const match = (id: string, home: string, away: string, hs: number, as: number): 
   home_score: hs,
   away_score: as,
   referee_name: null,
+  stage: null,
+  round_order: null,
+  match_number: null,
+  next_match_id: null,
+  next_slot: null,
+  winner_team_id: null,
+  tiebreak_note: null,
   ...timestamps,
 });
 const snapshot: FootballSnapshot = {
@@ -70,6 +81,7 @@ const snapshot: FootballSnapshot = {
   teams: [team("a", "Alfa"), team("b", "Beta")],
   players: [player],
   rosters: [],
+  competitionTeams: [],
   matches: [match("m", "a", "b", 2, 1)],
   events: [
     {

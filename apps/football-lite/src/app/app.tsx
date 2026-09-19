@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { AdminHome, AdminResourcePage, LoginPage } from "../features/admin/admin-pages";
+import { CompetitionControlPage } from "../features/admin/competition-control";
 import {
   CompetitionDetailPage,
   CompetitionsPage,
@@ -38,6 +39,7 @@ const router = createBrowserRouter([
       { path: "history", element: <HistoryPage /> },
       { path: "login", element: <LoginPage /> },
       { path: "admin", element: <AdminHome /> },
+      { path: "admin/competition-control", element: <CompetitionControlPage /> },
       { path: "admin/:resource", element: <AdminResourcePage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],

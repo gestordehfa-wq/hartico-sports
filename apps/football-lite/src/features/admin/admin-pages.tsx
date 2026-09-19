@@ -114,8 +114,47 @@ const resources: Readonly<Record<string, ResourceConfig>> = {
         options: fixed(competitionStatuses),
       },
       { name: "logo_url", label: "URL logo", type: "url", nullable: true },
+      {
+        name: "legs",
+        label: "Vueltas de liga (1 = una vuelta, 2 = ida y vuelta)",
+        type: "select",
+        required: true,
+        valueType: "number",
+        options: fixed(["1", "2"]),
+      },
     ],
     rows: (s) => s.competitions.map(cleanRow),
+  },
+  "competition-teams": {
+    title: "Inscripción de equipos",
+    table: "competition_teams",
+    columns: ["competition_id", "team_id", "seed"],
+    fields: [
+      {
+        name: "competition_id",
+        label: "Competición (liga o copa)",
+        type: "select",
+        required: true,
+        options: (s) =>
+          named(s.competitions.filter((item) => item.type === "league" || item.type === "cup")),
+      },
+      {
+        name: "team_id",
+        label: "Equipo",
+        type: "select",
+        required: true,
+        options: (s) => named(s.teams),
+      },
+      {
+        name: "seed",
+        label: "Cabeza de serie (opcional)",
+        type: "number",
+        nullable: true,
+        min: 1,
+        valueType: "number",
+      },
+    ],
+    rows: (s) => s.competitionTeams.map(cleanRow),
   },
   teams: {
     title: "Equipos",
@@ -389,7 +428,7 @@ const adminLinks = Object.entries(resources).map(([path, config]) => ({
   path,
   title: config.title,
 }));
-function AdminGate({ children }: Readonly<{ children: ReactNode }>) {
+export function AdminGate({ children }: Readonly<{ children: ReactNode }>) {
   const { configured, session, isAdmin, adminChecked } = useFootball();
   if (!configured)
     return (
@@ -492,6 +531,10 @@ export function AdminHome() {
         </button>
       </div>
       <div className="admin-grid">
+        <Link className="admin-module" to="/admin/competition-control">
+          <strong>Formatos de competición</strong>
+          <span>Fixture, cuadro, campeones y Supercopa</span>
+        </Link>
         {adminLinks.map(({ path, title }) => (
           <Link className="admin-module" to={`/admin/${path}`} key={path}>
             <strong>{title}</strong>

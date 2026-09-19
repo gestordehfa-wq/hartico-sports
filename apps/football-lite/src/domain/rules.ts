@@ -39,12 +39,16 @@ export function competitionStandings(
   const competition = snapshot.competitions.find((item) => item.id === competitionId);
   if (competition?.type !== "league") return [];
   const teamIds = new Set<string>();
-  for (const roster of snapshot.rosters)
-    if (roster.season_id === competition.season_id) teamIds.add(roster.team_id);
+  // v0.2: participan los equipos inscritos; sin inscripciones se conserva el criterio v0.1 (planteles).
+  const enrolled = snapshot.competitionTeams.filter((item) => item.competition_id === competitionId);
+  if (enrolled.length) for (const item of enrolled) teamIds.add(item.team_id);
+  else
+    for (const roster of snapshot.rosters)
+      if (roster.season_id === competition.season_id) teamIds.add(roster.team_id);
   for (const match of snapshot.matches)
     if (match.competition_id === competitionId) {
-      teamIds.add(match.home_team_id);
-      teamIds.add(match.away_team_id);
+      if (match.home_team_id) teamIds.add(match.home_team_id);
+      if (match.away_team_id) teamIds.add(match.away_team_id);
     }
   const rows = new Map<string, Omit<StandingRow, "team" | "goalDifference">>();
   for (const id of teamIds)
@@ -53,6 +57,8 @@ export function competitionStandings(
     if (
       match.competition_id !== competitionId ||
       match.status !== "finished" ||
+      match.home_team_id === null ||
+      match.away_team_id === null ||
       match.home_score === null ||
       match.away_score === null
     )
@@ -106,10 +112,16 @@ function applyResult(
 export function playerStatistics(
   snapshot: FootballSnapshot,
   seasonId?: string,
+  competitionId?: string,
 ): readonly PlayerStatistic[] {
   const matchIds = new Set(
     snapshot.matches
-      .filter((match) => match.status === "finished" && (!seasonId || match.season_id === seasonId))
+      .filter(
+        (match) =>
+          match.status === "finished" &&
+          (!seasonId || match.season_id === seasonId) &&
+          (!competitionId || match.competition_id === competitionId),
+      )
       .map(({ id }) => id),
   );
   const stats = snapshot.players.map((player) => {
@@ -149,13 +161,15 @@ export function playerStatistics(
 export function teamStatistics(
   snapshot: FootballSnapshot,
   seasonId?: string,
+  competitionId?: string,
 ): readonly TeamStatistic[] {
   const finished = snapshot.matches.filter(
     (match) =>
       match.status === "finished" &&
       match.home_score !== null &&
       match.away_score !== null &&
-      (!seasonId || match.season_id === seasonId),
+      (!seasonId || match.season_id === seasonId) &&
+      (!competitionId || match.competition_id === competitionId),
   );
   return snapshot.teams
     .map((team) => {

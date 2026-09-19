@@ -58,7 +58,7 @@ export function AppLayout() {
       </main>
       <footer className="site-footer">
         <span>{association.name}</span>
-        <span>{association.holoName} · Football Lite v0.1</span>
+        <span>{association.holoName} · Football Lite v0.2</span>
       </footer>
     </div>
   );

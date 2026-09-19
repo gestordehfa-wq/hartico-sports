@@ -34,7 +34,7 @@ export function Window({
   title,
   children,
   status,
-}: Readonly<{ title: string; children: ReactNode; status?: string }>) {
+}: Readonly<{ title: string; children: ReactNode; status?: string | undefined }>) {
   return (
     <WindowPanel title={title} status={status}>
       {children}

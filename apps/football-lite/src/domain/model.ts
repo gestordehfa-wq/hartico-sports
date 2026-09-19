@@ -6,6 +6,11 @@ export type CompetitionType = (typeof competitionTypes)[number];
 export const competitionStatuses = ["draft", "active", "completed", "archived"] as const;
 export type CompetitionStatus = (typeof competitionStatuses)[number];
 
+export const knockoutStages = ["round_of_16", "quarterfinal", "semifinal", "final", "supercup"] as const;
+export type KnockoutStage = (typeof knockoutStages)[number];
+export const legOptions = [1, 2] as const;
+export type Legs = (typeof legOptions)[number];
+
 export const entityStatuses = ["active", "inactive", "archived"] as const;
 export type EntityStatus = (typeof entityStatuses)[number];
 export const playerPositions = ["POR", "DEF", "MED", "ATK"] as const;
@@ -44,7 +49,21 @@ export type Competition = Timestamps &
     type: CompetitionType;
     status: CompetitionStatus;
     logo_url: string | null;
+    /** Liga: 1 = una vuelta, 2 = ida y vuelta. */
+    legs: Legs;
+    champion_team_id: string | null;
+    /** Solo Supercopa: competiciones cuyos campeones se enfrentan. */
+    source_league_id: string | null;
+    source_cup_id: string | null;
   }>;
+
+export type CompetitionTeam = Readonly<{
+  id: string;
+  competition_id: string;
+  team_id: string;
+  seed: number | null;
+  created_at: string;
+}>;
 
 export type Team = Timestamps &
   Readonly<{
@@ -87,14 +106,22 @@ export type Match = Timestamps &
     id: string;
     competition_id: string;
     season_id: string;
-    home_team_id: string;
-    away_team_id: string;
+    /** Nulo en rondas de copa aún sin rival. */
+    home_team_id: string | null;
+    away_team_id: string | null;
     matchday: number | null;
     scheduled_at: string;
     status: MatchStatus;
     home_score: number | null;
     away_score: number | null;
     referee_name: string | null;
+    stage: KnockoutStage | null;
+    round_order: number | null;
+    match_number: number | null;
+    next_match_id: string | null;
+    next_slot: 1 | 2 | null;
+    winner_team_id: string | null;
+    tiebreak_note: string | null;
   }>;
 
 export type MatchEvent = Readonly<{
@@ -135,6 +162,7 @@ export type FootballSnapshot = Readonly<{
   teams: readonly Team[];
   players: readonly Player[];
   rosters: readonly SeasonPlayerRoster[];
+  competitionTeams: readonly CompetitionTeam[];
   matches: readonly Match[];
   events: readonly MatchEvent[];
   appearances: readonly MatchPlayerAppearance[];
@@ -147,6 +175,7 @@ export type FootballTable =
   | "teams"
   | "players"
   | "season_player_rosters"
+  | "competition_teams"
   | "matches"
   | "match_events"
   | "match_player_appearances"
@@ -160,6 +189,7 @@ export const emptySnapshot: FootballSnapshot = {
   teams: [],
   players: [],
   rosters: [],
+  competitionTeams: [],
   matches: [],
   events: [],
   appearances: [],

@@ -852,3 +852,106 @@ tbody tr:hover td {
     gap: 4px;
   }
 }
+
+.champion-banner {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--accent-soft);
+}
+.matchday-title {
+  margin: 0;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--toolbar);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.bracket {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+.bracket-round {
+  display: grid;
+  min-width: 190px;
+  flex: 1;
+  align-content: start;
+  gap: 8px;
+}
+.bracket-round h3 {
+  margin: 0;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.bracket-matches {
+  display: grid;
+  gap: 10px;
+}
+.bracket-match {
+  display: grid;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+}
+.bracket-match > span {
+  display: flex;
+  justify-content: space-between;
+}
+.bracket-match > span.winner {
+  font-weight: 800;
+}
+.bracket-match i {
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+.bracket-match small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.list-stack {
+  display: grid;
+}
+.list-stack article {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.score-list {
+  display: grid;
+  gap: 10px;
+}
+.score-card {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.score-card > header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.score-card > p {
+  margin: 8px 0;
+}
+.score-live {
+  margin-left: auto;
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.score-form {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}

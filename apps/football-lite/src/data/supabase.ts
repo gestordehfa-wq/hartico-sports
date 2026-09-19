@@ -13,7 +13,35 @@ type FootballDatabase = {
       }
     >;
     Views: Record<string, never>;
-    Functions: { current_user_is_admin: { Args: Record<string, never>; Returns: boolean } };
+    Functions: {
+      current_user_is_admin: { Args: Record<string, never>; Returns: boolean };
+      advance_knockout_winner: {
+        Args: {
+          target_match_id: string;
+          p_tiebreak_winner_id: string | null;
+          p_tiebreak_note: string | null;
+        };
+        Returns: undefined;
+      };
+      close_league: {
+        Args: {
+          target_competition_id: string;
+          p_champion_team_id: string | null;
+          p_note: string | null;
+        };
+        Returns: undefined;
+      };
+      generate_supercup: {
+        Args: {
+          target_competition_id: string;
+          p_league_id: string;
+          p_cup_id: string;
+          p_scheduled_at: string;
+          p_opponent_team_id: string | null;
+        };
+        Returns: undefined;
+      };
+    };
   };
 };
 

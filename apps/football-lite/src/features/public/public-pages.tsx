@@ -1,14 +1,9 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useFootball } from "../../app/football-context";
 import { association } from "../../config/association";
-import type { Competition, FootballSnapshot, Match } from "../../domain/model";
-import {
-  activeSeason,
-  competitionStandings,
-  nextMatches,
-  playerStatistics,
-  teamStatistics,
-} from "../../domain/rules";
+import type { FootballSnapshot, Match } from "../../domain/model";
+import { activeSeason, nextMatches, playerStatistics, teamStatistics } from "../../domain/rules";
 import {
   Empty,
   formatDate,
@@ -21,8 +16,17 @@ import {
   TeamName,
   Window,
 } from "../shared/components";
+import { StandingsTable } from "../shared/standings-table";
+import {
+  ChampionBanner,
+  CompetitionAwards,
+  CompetitionLeaders,
+  CupBracket,
+  LeagueCalendar,
+  SupercupView,
+} from "./competition-views";
 
-const teamFor = (snapshot: FootballSnapshot, id: string) =>
+const teamFor = (snapshot: FootballSnapshot, id: string | null) =>
   snapshot.teams.find((team) => team.id === id);
 const playerFor = (snapshot: FootballSnapshot, id: string) =>
   snapshot.players.find((player) => player.id === id);
@@ -32,65 +36,6 @@ const matchesFor = (snapshot: FootballSnapshot, predicate: (match: Match) => boo
   snapshot.matches
     .filter(predicate)
     .sort((left, right) => right.scheduled_at.localeCompare(left.scheduled_at));
-
-function StandingsTable({
-  snapshot,
-  competition,
-  compact = false,
-}: Readonly<{ snapshot: FootballSnapshot; competition: Competition; compact?: boolean }>) {
-  const rows = competitionStandings(snapshot, competition.id);
-  if (!rows.length)
-    return <Empty>No hay resultados suficientes para generar la clasificación.</Empty>;
-  return (
-    <div className="table-scroll">
-      <table className="standings-table">
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Equipo</th>
-            <th scope="col">PJ</th>
-            {!compact && (
-              <>
-                <th scope="col">PG</th>
-                <th scope="col">PE</th>
-                <th scope="col">PP</th>
-                <th scope="col">GF</th>
-                <th scope="col">GC</th>
-                <th scope="col">DG</th>
-              </>
-            )}
-            <th scope="col">PTS</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, index) => (
-            <tr key={row.team.id}>
-              <td>{index + 1}</td>
-              <td>
-                <TeamMark team={row.team} />
-                <Link to={`/teams/${row.team.id}`}>{row.team.short_name}</Link>
-              </td>
-              <td>{row.played}</td>
-              {!compact && (
-                <>
-                  <td>{row.won}</td>
-                  <td>{row.drawn}</td>
-                  <td>{row.lost}</td>
-                  <td>{row.goalsFor}</td>
-                  <td>{row.goalsAgainst}</td>
-                  <td>{row.goalDifference}</td>
-                </>
-              )}
-              <td>
-                <strong>{row.points}</strong>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 export function HomePage() {
   const { snapshot, loading } = useFootball();
@@ -216,6 +161,7 @@ export function CompetitionDetailPage() {
   const competition = snapshot.competitions.find((item) => item.id === id);
   if (!competition) return <Empty>La competición no existe o no está publicada.</Empty>;
   const matches = matchesFor(snapshot, (match) => match.competition_id === competition.id);
+  const freeMatches = matches.filter((match) => match.stage === null);
   return (
     <>
       <PageHeader
@@ -226,15 +172,25 @@ export function CompetitionDetailPage() {
           "Temporada"
         }
       />
+      <ChampionBanner snapshot={snapshot} competition={competition} />
       {competition.type === "league" && (
-        <Window title="Clasificación" status="3 puntos por victoria · 1 por empate">
-          <StandingsTable snapshot={snapshot} competition={competition} />
-        </Window>
+        <>
+          <Window title="Clasificación" status="PJ · PG · PE · PP · GF · GC · DG · PTS (3-1-0)">
+            <StandingsTable snapshot={snapshot} competition={competition} />
+          </Window>
+          <LeagueCalendar snapshot={snapshot} competition={competition} />
+        </>
       )}
-      <Window title="Partidos" status={`${matches.length} registros`}>
-        {matches.length ? (
+      {competition.type === "cup" && <CupBracket snapshot={snapshot} competition={competition} />}
+      {competition.type === "supercup" && (
+        <SupercupView snapshot={snapshot} competition={competition} />
+      )}
+      <CompetitionLeaders snapshot={snapshot} competition={competition} />
+      <CompetitionAwards snapshot={snapshot} competition={competition} />
+      {competition.type !== "league" && freeMatches.length > 0 && (
+        <Window title="Partidos" status={`${freeMatches.length} registros`}>
           <div className="match-list">
-            {matches.map((match) => (
+            {freeMatches.map((match) => (
               <MatchRow
                 key={match.id}
                 match={match}
@@ -243,10 +199,8 @@ export function CompetitionDetailPage() {
               />
             ))}
           </div>
-        ) : (
-          <Empty>No hay partidos publicados.</Empty>
-        )}
-      </Window>
+        </Window>
+      )}
     </>
   );
 }
@@ -536,6 +490,12 @@ export function MatchDetailPage() {
         </div>
         <StatusBadge status={match.status} />
       </section>
+      {match.winner_team_id && (
+        <p className="champion-banner">
+          Ganador: <strong>{teamFor(snapshot, match.winner_team_id)?.name ?? "—"}</strong>
+          {match.tiebreak_note && ` · Empate definido por la asociación: ${match.tiebreak_note}`}
+        </p>
+      )}
       <Window
         title="Eventos del partido"
         status={match.referee_name ? `Árbitro: ${match.referee_name}` : "Árbitro no informado"}
@@ -598,17 +558,109 @@ export function StandingsPage() {
 
 export function StatsPage() {
   const { snapshot, loading } = useFootball();
+  const [seasonChoice, setSeasonChoice] = useState("");
+  const [competitionChoice, setCompetitionChoice] = useState("");
   if (loading) return <Loader />;
-  const season = activeSeason(snapshot.seasons);
-  const players = playerStatistics(snapshot, season?.id);
-  const teams = teamStatistics(snapshot, season?.id);
+  const season =
+    snapshot.seasons.find((item) => item.id === seasonChoice) ?? activeSeason(snapshot.seasons);
+  const competitions = snapshot.competitions.filter((item) => item.season_id === season?.id);
+  const competition = competitions.find((item) => item.id === competitionChoice);
+  const players = playerStatistics(snapshot, season?.id, competition?.id);
+  const teams = teamStatistics(snapshot, season?.id, competition?.id);
+  const awards = snapshot.awards.filter(
+    (item) => item.season_id === season?.id && (!competition || item.competition_id === competition.id),
+  );
+  const assisters = [...players].sort(
+    (left, right) => right.assists - left.assists || left.player.display_name.localeCompare(right.player.display_name),
+  );
   return (
     <>
       <PageHeader
         eyebrow={season?.name ?? association.seasonLabel}
         title="Estadísticas"
-        copy="Datos básicos derivados de apariciones, eventos y resultados."
+        copy="Datos básicos derivados de apariciones, eventos y resultados, por temporada y competición."
       />
+      <div className="admin-toolbar">
+        <label htmlFor="stats-season">
+          Temporada{" "}
+          <select
+            id="stats-season"
+            value={season?.id ?? ""}
+            onChange={(event) => {
+              setSeasonChoice(event.currentTarget.value);
+              setCompetitionChoice("");
+            }}
+          >
+            {snapshot.seasons.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label htmlFor="stats-competition">
+          Competición{" "}
+          <select
+            id="stats-competition"
+            value={competition?.id ?? ""}
+            onChange={(event) => setCompetitionChoice(event.currentTarget.value)}
+          >
+            <option value="">Todas</option>
+            {competitions.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="dashboard-columns">
+        <Window title="Goleadores">
+          {players.some((row) => row.goals > 0) ? (
+            <ol className="ranking-list">
+              {players.filter((row) => row.goals > 0).slice(0, 5).map((row) => (
+                <li key={row.player.id}>
+                  <Link to={`/players/${row.player.id}`}>{row.player.display_name}</Link>
+                  <strong>{row.goals}</strong>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <Empty>No hay goles registrados.</Empty>
+          )}
+        </Window>
+        <Window title="Asistentes">
+          {assisters.some((row) => row.assists > 0) ? (
+            <ol className="ranking-list">
+              {assisters.filter((row) => row.assists > 0).slice(0, 5).map((row) => (
+                <li key={row.player.id}>
+                  <Link to={`/players/${row.player.id}`}>{row.player.display_name}</Link>
+                  <strong>{row.assists}</strong>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <Empty>No hay asistencias registradas.</Empty>
+          )}
+        </Window>
+      </div>
+      <Window title="Campeones y premios" status={`${awards.length} registros`}>
+        {awards.length ? (
+          <div className="list-stack">
+            {awards.map((award) => (
+              <article key={award.id}>
+                <strong>{award.title}</strong>
+                <span>
+                  {award.award_type.replaceAll("_", " ")} ·{" "}
+                  {teamFor(snapshot, award.team_id)?.name ?? playerFor(snapshot, award.player_id ?? "")?.display_name ?? "—"}
+                </span>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <Empty>No hay campeones ni premios registrados para el filtro.</Empty>
+        )}
+      </Window>
       <Window title="Jugadores" status={`${players.length} jugadores`}>
         <div className="table-scroll">
           <table>
@@ -705,6 +757,21 @@ export function HistoryPage() {
                       {item.name}
                     </Link>
                   ))}
+                </div>
+                <div>
+                  <h3>Campeones</h3>
+                  {competitions.filter((item) => item.champion_team_id).length ? (
+                    competitions
+                      .filter((item) => item.champion_team_id)
+                      .map((item) => (
+                        <article key={item.id}>
+                          <strong>{item.name}</strong>
+                          <span>{teamFor(snapshot, item.champion_team_id)?.name ?? "—"}</span>
+                        </article>
+                      ))
+                  ) : (
+                    <p>Sin campeones registrados.</p>
+                  )}
                 </div>
                 <div>
                   <h3>Premios</h3>
